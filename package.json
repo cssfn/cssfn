@@ -1,6 +1,6 @@
 {
   "name": "@cssfn/cssfn",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Writes CSS in javascript function.",
   "main": "dist/cssfn.js",
   "types": "dist/cssfn.d.ts",

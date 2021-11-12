@@ -1,7 +1,7 @@
 # cssfn - Writes CSS in JavaScript way
 
 A lib for generating _Style Sheet_ (css) with _JavaScript function_.  
-Similar to _React Hook_ but for **generating css dynamically**.
+Similar to _React Hooks_ but for **generating css dynamically**.
 
 By underlying JavaScript language, the css can be easily exported/imported as a regular JavaScript module.
 
@@ -10,7 +10,7 @@ The generated css can be exported to css `toString()` or attached to DOM directl
 ## Preview
 
 ```js
-export const usesAwesomeButton = composition([
+export const usesAwesomeButton = () => composition([
     imports([
         stripoutControl(), // clear browser's default styles
         
