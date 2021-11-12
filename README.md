@@ -21,6 +21,8 @@ export const usesAwesomeButton = () => composition([
     layout({
         display       : 'flex',
         flexDirection : 'row',
+        background    : 'pink',
+        color         : 'darkred',
         
         // writes the css declaration similar to regular css
         
@@ -53,13 +55,24 @@ export const usesAwesomeButton = () => composition([
 
 // attach the css to DOM:
 createSheet(() => [
-    mainComposition([
-        imports([
-            usesAwesomeButton(),
+    global([
+        rule('.awesome-btn', [
+            imports([
+                usesAwesomeButton(),
+            ]),
         ]),
     ]),
 ])
 .attach();
+```
+
+Then we can consume our generated css like this:
+
+```html
+<script src="button-style.js">
+</script>
+
+<button class="awesome-btn">Awesome!</button>
 ```
 
 ## Features
