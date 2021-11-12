@@ -1,0 +1,44 @@
+{
+  "name": "@cssfn/cssfn",
+  "version": "1.0.0",
+  "description": "Writes CSS in javascript function.",
+  "main": "dist/cssfn.js",
+  "types": "dist/cssfn.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cssfn/cssfn.git"
+  },
+  "keywords": [
+    "css",
+    "stylesheet",
+    "javascript",
+    "function",
+    "hooks",
+    "mixin",
+    "typescript"
+  ],
+  "author": "heymarco",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cssfn/cssfn/issues"
+  },
+  "homepage": "https://github.com/cssfn/cssfn#readme",
+  "dependencies": {
+    "@cssfn/css-types": "^1.0.1",
+    "@cssfn/jss-plugin-extend": "^1.0.0",
+    "@cssfn/jss-plugin-global": "^1.0.0",
+    "@cssfn/jss-plugin-short": "^1.0.0",
+    "@cssfn/types": "^1.0.2",
+    "camel-case": "^4.1.2",
+    "jss": "^10.8.2",
+    "jss-plugin-camel-case": "^10.8.2",
+    "jss-plugin-expand": "^10.8.2",
+    "jss-plugin-nested": "^10.8.2",
+    "jss-plugin-vendor-prefixer": "^10.8.2",
+    "pascal-case": "^3.1.2",
+    "tiny-warning": "^1.0.3"
+  }
+}
