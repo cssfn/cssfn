@@ -26,7 +26,7 @@ export const usesAwesomeButton = () => composition([
         
         // writes the css declaration similar to regular css
         
-        ...children(['span', '.logo'], [
+        ...children(['span', '.logo'], [ // target to <span> and class="logo"
             imports([
                 // imports any stuff here...
             ]),
@@ -61,6 +61,10 @@ createSheet(() => [
                 usesAwesomeButton(),
             ]),
         ]),
+        rule('.awesome-checkbox', [
+            // ....
+        ]),
+        // ....
     ]),
 ])
 .attach();
@@ -79,8 +83,8 @@ Then we can consume our generated css like this:
 
 * includes all Vanilla & ES6 JavaScript features.
 * Lazy execution (your function will be executed on demand).
-* Cached - your function only be executed once (or never if not needed)
-* IntelliSense supported - Our cssfn is written in TypeScript (superset of JavaScript)
+* Cached - your function only be executed once (or never if not needed).
+* IntelliSense supported - Our cssfn is written in TypeScript (superset of JavaScript).
 * CSS Variable Management - Never write variable name in plain string.
 * CSS Config Management - Shares a common setting to many components.
 
@@ -96,6 +100,6 @@ npm i @cssfn/cssfn
 If you feel our lib is useful for your projects,  
 please make a donation to avoid our project from extinction.
 
-We always maintain our projects as long as we are still alive.
+We always maintain our projects as long as we're still alive.
 
 [[Make a donation](https://ko-fi.com/heymarco)]
