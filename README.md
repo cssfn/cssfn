@@ -81,7 +81,7 @@ Then we can consume our generated css like this:
 
 ## Features
 
-* includes all Vanilla & ES6 JavaScript features.
+* Includes all Vanilla & ES6 JavaScript features.
 * Lazy execution (your function will be executed on demand).
 * Cached - your function only be executed once (or never if not needed).
 * IntelliSense supported - Our cssfn is written in TypeScript (superset of JavaScript).
