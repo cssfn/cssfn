@@ -1,45 +1,18 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.camelCase = exports.pascalCase = exports.solidBackg = exports.escapeSvg = exports.iif = exports.isNotEmpty = exports.isEmpty = exports.isNotHover = exports.isHover = exports.isNotFocusVisible = exports.isFocusVisible = exports.isNotFocus = exports.isFocus = exports.isNotActive = exports.isActive = exports.isNotNthLastChild = exports.isNthLastChild = exports.isNotNthChild = exports.isNthChild = exports.isNotLastChild = exports.isLastChild = exports.isNotFirstChild = exports.isFirstChild = exports.fontFace = exports.atGlobal = exports.atRoot = exports.emptyRule = exports.noRule = exports.rule = exports.states = exports.variants = exports.rules = exports.adjacentSiblings = exports.siblings = exports.children = exports.descendants = exports.combinators = exports.vars = exports.layout = exports.imports = exports.global = exports.mainComposition = exports.compositionOf = exports.mergeStyles = exports.composition = exports.usesCssfn = exports.createSheet = exports.createJssSheet = void 0;
 // jss:
-const jss_1 = require("jss"); // base technology of our cssfn components
+import { create as createJss, } from 'jss'; // base technology of our cssfn components
 // official jss-plugins:
-const jss_plugin_nested_1 = __importDefault(require("jss-plugin-nested"));
-const jss_plugin_camel_case_1 = __importDefault(require("jss-plugin-camel-case"));
-const jss_plugin_expand_1 = __importDefault(require("jss-plugin-expand"));
-const jss_plugin_vendor_prefixer_1 = __importDefault(require("jss-plugin-vendor-prefixer"));
+import jssPluginNested from 'jss-plugin-nested';
+import jssPluginCamelCase from 'jss-plugin-camel-case';
+import jssPluginExpand from 'jss-plugin-expand';
+import jssPluginVendor from 'jss-plugin-vendor-prefixer';
 // custom jss-plugins:
-const jss_plugin_global_1 = __importDefault(require("@cssfn/jss-plugin-global"));
-const jss_plugin_extend_1 = __importStar(require("@cssfn/jss-plugin-extend"));
-const jss_plugin_short_1 = __importDefault(require("@cssfn/jss-plugin-short"));
+import jssPluginGlobal from '@cssfn/jss-plugin-global';
+import { default as jssPluginExtend, mergeStyle, } from '@cssfn/jss-plugin-extend';
+import jssPluginShort from '@cssfn/jss-plugin-short';
 // others libs:
-const pascal_case_1 = require("pascal-case"); // pascal-case support for jss
-Object.defineProperty(exports, "pascalCase", { enumerable: true, get: function () { return pascal_case_1.pascalCase; } });
-const camel_case_1 = require("camel-case"); // camel-case  support for jss
-Object.defineProperty(exports, "camelCase", { enumerable: true, get: function () { return camel_case_1.camelCase; } });
-const tiny_warning_1 = __importDefault(require("tiny-warning"));
+import { pascalCase } from 'pascal-case'; // pascal-case support for jss
+import { camelCase } from 'camel-case'; // camel-case  support for jss
+import warning from 'tiny-warning';
 // jss:
 const createGenerateId = (options = {}) => {
     let idCounter = 0;
@@ -47,55 +20,51 @@ const createGenerateId = (options = {}) => {
     return (rule, sheet) => {
         idCounter++;
         if (idCounter > maxCounter)
-            (0, tiny_warning_1.default)(false, `[JSS] You might have a memory leak. ID counter is at ${idCounter}.`);
+            warning(false, `[JSS] You might have a memory leak. ID counter is at ${idCounter}.`);
         const prefix = sheet?.options?.classNamePrefix || 'c';
         return `${prefix}${idCounter}`;
     };
 };
-const customJss = (0, jss_1.create)().setup({ createGenerateId, plugins: [
-        (0, jss_plugin_global_1.default)(),
-        (0, jss_plugin_extend_1.default)(),
-        (0, jss_plugin_nested_1.default)(),
-        (0, jss_plugin_short_1.default)(),
-        (0, jss_plugin_camel_case_1.default)(),
-        (0, jss_plugin_expand_1.default)(),
-        (0, jss_plugin_vendor_prefixer_1.default)(),
+const customJss = createJss().setup({ createGenerateId, plugins: [
+        jssPluginGlobal(),
+        jssPluginExtend(),
+        jssPluginNested(),
+        jssPluginShort(),
+        jssPluginCamelCase(),
+        jssPluginExpand(),
+        jssPluginVendor(),
     ] });
 // styles:
-const createJssSheet = (styles) => {
+export const createJssSheet = (styles) => {
     return customJss.createStyleSheet(((typeof (styles) === 'function') ? styles() : styles));
 };
-exports.createJssSheet = createJssSheet;
-const createSheet = (classes) => {
-    return (0, exports.createJssSheet)(() => (0, exports.usesCssfn)(classes));
+export const createSheet = (classes) => {
+    return createJssSheet(() => usesCssfn(classes));
 };
-exports.createSheet = createSheet;
 // cssfn hooks:
-const usesCssfn = (classes) => {
-    return ((0, exports.mergeStyles)(((typeof (classes) === 'function') ? classes() : classes)
+export const usesCssfn = (classes) => {
+    return (mergeStyles(((typeof (classes) === 'function') ? classes() : classes)
         /*
             empty `className` recognized as `@global` in our `jss-plugin-global`
             but to make more compatible with JSS' official `jss-plugin-global`
             we convert empty `className` to `'@global'`
          */
-        .map(([className, styles]) => ({ [className || '@global']: (0, exports.mergeStyles)(styles) })) // convert each `[className, styles]` to `{ className : mergeStyles(styles) | null }`
+        .map(([className, styles]) => ({ [className || '@global']: mergeStyles(styles) })) // convert each `[className, styles]` to `{ className : mergeStyles(styles) | null }`
     ) ?? {});
 };
-exports.usesCssfn = usesCssfn;
 // compositions:
 /**
  * Defines the (sub) component's composition.
  * @returns A `StyleCollection` represents the (sub) component's composition.
  */
-const composition = (styles) => styles;
-exports.composition = composition;
+export const composition = (styles) => styles;
 /**
  * Merges the (sub) component's composition to single `Style`.
  * @returns A `Style` represents the merged (sub) component's composition
  * -or-
  * `null` represents an empty `Style`.
  */
-const mergeStyles = (styles) => {
+export const mergeStyles = (styles) => {
     /*
         StyleCollection = ProductOrFactoryOrDeepArray<OptionalOrFalse<Style>>
         StyleCollection = ProductOrFactory<OptionalOrFalse<Style>> | ProductOrFactoryDeepArray<OptionalOrFalse<Style>>
@@ -117,7 +86,7 @@ const mergeStyles = (styles) => {
     for (const subStyles of styles) {
         const subStyleValue = (Array.isArray(subStyles)
             ?
-                (0, exports.mergeStyles)(subStyles) // an array => ProductOrFactoryDeepArray<OptionalOrFalse<Style>> => recursively `mergeStyles()`
+                mergeStyles(subStyles) // an array => ProductOrFactoryDeepArray<OptionalOrFalse<Style>> => recursively `mergeStyles()`
             :
                 (
                 // not an array => ProductOrFactory<OptionalOrFalse<Style>>
@@ -129,54 +98,47 @@ const mergeStyles = (styles) => {
                 ));
         if (!subStyleValue)
             continue; // `null` or `undefined` => skip
-        (0, jss_plugin_extend_1.mergeStyle)(mergedStyles, subStyleValue);
+        mergeStyle(mergedStyles, subStyleValue);
     } // for
     if (Object.keys(mergedStyles).length === 0)
         return null; // an empty object => return `null`
     return mergedStyles;
 };
-exports.mergeStyles = mergeStyles;
 /**
  * Defines the additional component's composition.
  * @returns A `ClassEntry` represents the component's composition.
  */
-const compositionOf = (className, styles) => [
+export const compositionOf = (className, styles) => [
     className,
     styles
 ];
-exports.compositionOf = compositionOf;
 // shortcut compositions:
 /**
  * Defines the main component's composition.
  * @returns A `ClassEntry` represents the component's composition.
  */
-const mainComposition = (styles) => (0, exports.compositionOf)('main', styles);
-exports.mainComposition = mainComposition;
+export const mainComposition = (styles) => compositionOf('main', styles);
 /**
  * Defines the global style applied to a whole document.
  * @returns A `ClassEntry` represents the global style.
  */
-const global = (ruleCollection) => (0, exports.compositionOf)('', [(0, exports.rules)(ruleCollection)]);
-exports.global = global;
-const imports = (styles) => (0, exports.composition)(styles);
-exports.imports = imports;
+export const globalDef = (ruleCollection) => compositionOf('', [rules(ruleCollection)]);
+export const imports = (styles) => composition(styles);
 // layouts:
 /**
  * Defines component's layout.
  * @returns A `Style` represents the component's layout.
  */
-const layout = (style) => style;
-exports.layout = layout;
+export const layout = (style) => style;
 /**
  * Defines component's variable(s).
  * @returns A `Style` represents the component's variable(s).
  */
-const vars = (items) => items;
-exports.vars = vars;
+export const vars = (items) => items;
 const defaultCombinatorOptions = {
     groupSelectors: true,
 };
-const combinators = (combinator, selectors, styles, options = defaultCombinatorOptions) => {
+export const combinators = (combinator, selectors, styles, options = defaultCombinatorOptions) => {
     const { groupSelectors = defaultCombinatorOptions.groupSelectors, } = options;
     const combiSelectors = flat(selectors).map((selector) => {
         if (!selector)
@@ -190,7 +152,7 @@ const combinators = (combinator, selectors, styles, options = defaultCombinatorO
     });
     if (!combiSelectors.length)
         return {}; // no selector => return empty
-    const mergedStyles = (0, exports.mergeStyles)(styles); // merge the `styles` to single `Style`, for making JSS understand
+    const mergedStyles = mergeStyles(styles); // merge the `styles` to single `Style`, for making JSS understand
     if (!mergedStyles)
         return {}; // no style => return empty
     if (groupSelectors) {
@@ -203,21 +165,16 @@ const combinators = (combinator, selectors, styles, options = defaultCombinatorO
             .map((combiSelector) => [combiSelector, mergedStyles]));
     } // if
 };
-exports.combinators = combinators;
-const descendants = (selectors, styles, options = defaultCombinatorOptions) => (0, exports.combinators)(' ', selectors, styles, options);
-exports.descendants = descendants;
-const children = (selectors, styles, options = defaultCombinatorOptions) => (0, exports.combinators)('>', selectors, styles, options);
-exports.children = children;
-const siblings = (selectors, styles, options = defaultCombinatorOptions) => (0, exports.combinators)('~', selectors, styles, options);
-exports.siblings = siblings;
-const adjacentSiblings = (selectors, styles, options = defaultCombinatorOptions) => (0, exports.combinators)('+', selectors, styles, options);
-exports.adjacentSiblings = adjacentSiblings;
+export const descendants = (selectors, styles, options = defaultCombinatorOptions) => combinators(' ', selectors, styles, options);
+export const children = (selectors, styles, options = defaultCombinatorOptions) => combinators('>', selectors, styles, options);
+export const siblings = (selectors, styles, options = defaultCombinatorOptions) => combinators('~', selectors, styles, options);
+export const adjacentSiblings = (selectors, styles, options = defaultCombinatorOptions) => combinators('+', selectors, styles, options);
 const defaultRuleOptions = {
     minSpecificityWeight: 0,
 };
-const rules = (ruleCollection, options = defaultRuleOptions) => {
+export const rules = (ruleCollection, options = defaultRuleOptions) => {
     const { minSpecificityWeight = defaultRuleOptions.minSpecificityWeight, } = options;
-    return (0, exports.composition)((() => {
+    return composition((() => {
         const noSelectors = [];
         return [
             ...(Array.isArray(ruleCollection) ? ruleCollection : [ruleCollection])
@@ -352,7 +309,7 @@ const rules = (ruleCollection, options = defaultRuleOptions) => {
                 .filter(([nestedSelectors]) => (nestedSelectors.length > 0)) // filter out empty `nestedSelectors`
                 .map(([nestedSelectors, styles]) => [
                 nestedSelectors,
-                (0, exports.mergeStyles)(styles) // merge the `styles` to single `Style`, for making JSS understand
+                mergeStyles(styles) // merge the `styles` to single `Style`, for making JSS understand
             ])
                 .filter((tuple) => !!tuple[1]) // filter out empty `mergedStyles`
                 .map(([nestedSelectors, mergedStyles]) => {
@@ -364,133 +321,106 @@ const rules = (ruleCollection, options = defaultRuleOptions) => {
         ];
     })());
 };
-exports.rules = rules;
 // shortcut rules:
 /**
  * Defines component's variants.
  * @returns A `StyleCollection` represents the component's variants.
  */
-const variants = (variants, options = defaultRuleOptions) => (0, exports.rules)(variants, options);
-exports.variants = variants;
+export const variants = (variants, options = defaultRuleOptions) => rules(variants, options);
 /**
  * Defines component's states.
  * @param inherit `true` to inherit states from parent element -or- `false` to create independent states.
  * @returns A `StyleCollection` represents the component's states.
  */
-const states = (states, inherit = false, options = { ...defaultRuleOptions, minSpecificityWeight: 3 }) => {
-    return (0, exports.rules)((typeof (states) === 'function') ? states(inherit) : states, options);
+export const states = (states, inherit = false, options = { ...defaultRuleOptions, minSpecificityWeight: 3 }) => {
+    return rules((typeof (states) === 'function') ? states(inherit) : states, options);
 };
-exports.states = states;
 // rule items:
 /**
  * Defines component's `style(s)` that is applied when the specified `selector(s)` meet the conditions.
  * @returns A `RuleEntry` represents the component's rule.
  */
-const rule = (selectors, styles) => [selectors, styles];
-exports.rule = rule;
+export const rule = (selectors, styles) => [selectors, styles];
 // shortcut rule items:
-const noRule = (styles) => (0, exports.rule)('&', styles);
-exports.noRule = noRule;
-const emptyRule = () => (0, exports.rule)(null, null);
-exports.emptyRule = emptyRule;
-const atRoot = (styles) => (0, exports.rule)(':root', styles);
-exports.atRoot = atRoot;
-const atGlobal = (styles) => (0, exports.rule)('@global', styles);
-exports.atGlobal = atGlobal;
-const fontFace = (styles) => (0, exports.atGlobal)((0, exports.rules)([
-    (0, exports.rule)('@font-face', styles),
+export const noRule = (styles) => rule('&', styles);
+export const emptyRule = () => rule(null, null);
+export const atRoot = (styles) => rule(':root', styles);
+export const atGlobal = (styles) => rule('@global', styles);
+export const fontFace = (styles) => atGlobal(rules([
+    rule('@font-face', styles),
 ]));
-exports.fontFace = fontFace;
-const isFirstChild = (styles) => (0, exports.rule)(':first-child', styles);
-exports.isFirstChild = isFirstChild;
-const isNotFirstChild = (styles) => (0, exports.rule)(':not(:first-child)', styles);
-exports.isNotFirstChild = isNotFirstChild;
-const isLastChild = (styles) => (0, exports.rule)(':last-child', styles);
-exports.isLastChild = isLastChild;
-const isNotLastChild = (styles) => (0, exports.rule)(':not(:last-child)', styles);
-exports.isNotLastChild = isNotLastChild;
-const isNthChild = (step, offset, styles) => {
+export const isFirstChild = (styles) => rule(':first-child', styles);
+export const isNotFirstChild = (styles) => rule(':not(:first-child)', styles);
+export const isLastChild = (styles) => rule(':last-child', styles);
+export const isNotLastChild = (styles) => rule(':not(:last-child)', styles);
+export const isNthChild = (step, offset, styles) => {
     if (step === 0) { // no step
         if (offset === 0)
-            return (0, exports.emptyRule)(); // element indices are starting from 1 => never match => return empty style
+            return emptyRule(); // element indices are starting from 1 => never match => return empty style
         if (offset === 1)
-            return (0, exports.isFirstChild)(styles);
-        return (0, exports.rule)(`:nth-child(${offset})`, styles);
+            return isFirstChild(styles);
+        return rule(`:nth-child(${offset})`, styles);
     }
     else if (step === 1) { // 1 step
-        return (0, exports.rule)(`:nth-child(n+${offset})`, styles);
+        return rule(`:nth-child(n+${offset})`, styles);
     }
     else { // 2+ steps
-        return (0, exports.rule)(`:nth-child(${step}n+${offset})`, styles);
+        return rule(`:nth-child(${step}n+${offset})`, styles);
     } // if
 };
-exports.isNthChild = isNthChild;
-const isNotNthChild = (step, offset, styles) => {
+export const isNotNthChild = (step, offset, styles) => {
     if (step === 0) { // no step
         // if (offset === 0) return emptyRule(); // element indices are starting from 1 => never match => return empty style
         if (offset === 1)
-            return (0, exports.isNotFirstChild)(styles);
-        return (0, exports.rule)(`:not(:nth-child(${offset}))`, styles);
+            return isNotFirstChild(styles);
+        return rule(`:not(:nth-child(${offset}))`, styles);
     }
     else if (step === 1) { // 1 step
-        return (0, exports.rule)(`:not(:nth-child(n+${offset}))`, styles);
+        return rule(`:not(:nth-child(n+${offset}))`, styles);
     }
     else { // 2+ steps
-        return (0, exports.rule)(`:not(:nth-child(${step}n+${offset}))`, styles);
+        return rule(`:not(:nth-child(${step}n+${offset}))`, styles);
     } // if
 };
-exports.isNotNthChild = isNotNthChild;
-const isNthLastChild = (step, offset, styles) => {
+export const isNthLastChild = (step, offset, styles) => {
     if (step === 0) { // no step
         if (offset === 0)
-            return (0, exports.emptyRule)(); // element indices are starting from 1 => never match => return empty style
+            return emptyRule(); // element indices are starting from 1 => never match => return empty style
         if (offset === 1)
-            return (0, exports.isLastChild)(styles);
-        return (0, exports.rule)(`:nth-last-child(${offset})`, styles);
+            return isLastChild(styles);
+        return rule(`:nth-last-child(${offset})`, styles);
     }
     else if (step === 1) { // 1 step
-        return (0, exports.rule)(`:nth-last-child(n+${offset})`, styles);
+        return rule(`:nth-last-child(n+${offset})`, styles);
     }
     else { // 2+ steps
-        return (0, exports.rule)(`:nth-last-child(${step}n+${offset})`, styles);
+        return rule(`:nth-last-child(${step}n+${offset})`, styles);
     } // if
 };
-exports.isNthLastChild = isNthLastChild;
-const isNotNthLastChild = (step, offset, styles) => {
+export const isNotNthLastChild = (step, offset, styles) => {
     if (step === 0) { // no step
         // if (offset === 0) return emptyRule(); // element indices are starting from 1 => never match => return empty style
         if (offset === 1)
-            return (0, exports.isNotLastChild)(styles);
-        return (0, exports.rule)(`:not(:nth-last-child(${offset}))`, styles);
+            return isNotLastChild(styles);
+        return rule(`:not(:nth-last-child(${offset}))`, styles);
     }
     else if (step === 1) { // 1 step
-        return (0, exports.rule)(`:not(:nth-last-child(n+${offset}))`, styles);
+        return rule(`:not(:nth-last-child(n+${offset}))`, styles);
     }
     else { // 2+ steps
-        return (0, exports.rule)(`:not(:nth-last-child(${step}n+${offset}))`, styles);
+        return rule(`:not(:nth-last-child(${step}n+${offset}))`, styles);
     } // if
 };
-exports.isNotNthLastChild = isNotNthLastChild;
-const isActive = (styles) => (0, exports.rule)(':active', styles);
-exports.isActive = isActive;
-const isNotActive = (styles) => (0, exports.rule)(':not(:active)', styles);
-exports.isNotActive = isNotActive;
-const isFocus = (styles) => (0, exports.rule)(':focus', styles);
-exports.isFocus = isFocus;
-const isNotFocus = (styles) => (0, exports.rule)(':not(:focus)', styles);
-exports.isNotFocus = isNotFocus;
-const isFocusVisible = (styles) => (0, exports.rule)(':focus-visible', styles);
-exports.isFocusVisible = isFocusVisible;
-const isNotFocusVisible = (styles) => (0, exports.rule)(':not(:focus-visible)', styles);
-exports.isNotFocusVisible = isNotFocusVisible;
-const isHover = (styles) => (0, exports.rule)(':hover', styles);
-exports.isHover = isHover;
-const isNotHover = (styles) => (0, exports.rule)(':not(:hover)', styles);
-exports.isNotHover = isNotHover;
-const isEmpty = (styles) => (0, exports.rule)(':empty', styles);
-exports.isEmpty = isEmpty;
-const isNotEmpty = (styles) => (0, exports.rule)(':not(:empty)', styles);
-exports.isNotEmpty = isNotEmpty;
+export const isActive = (styles) => rule(':active', styles);
+export const isNotActive = (styles) => rule(':not(:active)', styles);
+export const isFocus = (styles) => rule(':focus', styles);
+export const isNotFocus = (styles) => rule(':not(:focus)', styles);
+export const isFocusVisible = (styles) => rule(':focus-visible', styles);
+export const isNotFocusVisible = (styles) => rule(':not(:focus-visible)', styles);
+export const isHover = (styles) => rule(':hover', styles);
+export const isNotHover = (styles) => rule(':not(:hover)', styles);
+export const isEmpty = (styles) => rule(':empty', styles);
+export const isNotEmpty = (styles) => rule(':not(:empty)', styles);
 // utilities:
 /**
  * Returns a new array with all sub-array elements concatenated into it recursively up to infinity depth.
@@ -519,16 +449,15 @@ const flat = (collection) => {
     } // for
     return merged;
 };
-const iif = (condition, content) => {
+export const iif = (condition, content) => {
     return condition ? content : {};
 };
-exports.iif = iif;
 /**
  * Escapes some sets of character in svg data, so it will be valid to be written in css.
  * @param svgData The raw svg data to be escaped.
  * @returns A `string` represents an escaped svg data.
  */
-const escapeSvg = (svgData) => {
+export const escapeSvg = (svgData) => {
     const escapedChars = {
         '<': '%3c',
         '>': '%3e',
@@ -544,13 +473,12 @@ const escapeSvg = (svgData) => {
     }
     return svgDataCopy.join('');
 };
-exports.escapeSvg = escapeSvg;
 /**
  * Creates a single layer solid background based on specified `color`.
  * @param color The color of the solid background to create.
  * @returns A `Cust.Expr` represents a solid background.
  */
-const solidBackg = (color, clip = 'border-box') => {
+export const solidBackg = (color, clip = 'border-box') => {
     return [[`linear-gradient(${color},${color})`, clip]];
 };
-exports.solidBackg = solidBackg;
+export { pascalCase, camelCase };

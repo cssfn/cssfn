@@ -60,7 +60,7 @@ export declare const mainComposition: (styles: StyleCollection[]) => ClassEntry<
  * Defines the global style applied to a whole document.
  * @returns A `ClassEntry` represents the global style.
  */
-export declare const global: (ruleCollection: RuleCollection) => ClassEntry<"">;
+export declare const globalDef: (ruleCollection: RuleCollection) => ClassEntry<"">;
 export declare const imports: (styles: StyleCollection[]) => StyleCollection;
 /**
  * Defines component's layout.

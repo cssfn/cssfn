@@ -238,7 +238,7 @@ export const mainComposition = (styles: StyleCollection[])      => compositionOf
  * Defines the global style applied to a whole document.
  * @returns A `ClassEntry` represents the global style.
  */
-export const global          = (ruleCollection: RuleCollection) => compositionOf(''     , [rules(ruleCollection)]);
+export const globalDef       = (ruleCollection: RuleCollection) => compositionOf(''     , [rules(ruleCollection)]);
 export const imports         = (styles: StyleCollection[])      => composition(styles);
 
 

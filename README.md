@@ -40,7 +40,7 @@ export const usesAwesomeButton = () => composition([
             layout({
                 fontSize: 'xx-large',
                 // ....
-            })
+            }),
         ]),
         rule('.dark', [
             // ...
@@ -55,7 +55,7 @@ export const usesAwesomeButton = () => composition([
 
 // attach the css to DOM:
 createSheet(() => [
-    global([
+    globalDef([
         rule('.awesome-btn', [
             imports([
                 usesAwesomeButton(),
@@ -77,8 +77,8 @@ Then we can consume our generated css like this:
 
 ## Features
 
-* includes all Vanilla & ES6 JavaScript features
-* Lazy execution (your function will be executed on demand
+* includes all Vanilla & ES6 JavaScript features.
+* Lazy execution (your function will be executed on demand).
 * Cached - your function only be executed once (or never if not needed)
 * IntelliSense supported - Our cssfn is written in TypeScript (superset of JavaScript)
 * CSS Variable Management - Never write variable name in plain string.
