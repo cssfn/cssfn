@@ -12,11 +12,6 @@ import {
     CreateGenerateId,
     create as createJss,
 }                           from 'jss'           // base technology of our cssfn components
-// official jss-plugins:
-import jssPluginNested      from 'jss-plugin-nested'
-import jssPluginCamelCase   from 'jss-plugin-camel-case'
-import jssPluginExpand      from 'jss-plugin-expand'
-import jssPluginVendor      from 'jss-plugin-vendor-prefixer'
 // custom jss-plugins:
 import jssPluginGlobal      from '@cssfn/jss-plugin-global'
 import {
@@ -24,7 +19,10 @@ import {
     ExtendableStyle,
     mergeStyle,
 }                           from '@cssfn/jss-plugin-extend'
+import jssPluginNested      from '@cssfn/jss-plugin-nested'
 import jssPluginShort       from '@cssfn/jss-plugin-short'
+import jssPluginCamelCase   from '@cssfn/jss-plugin-camel-case'
+import jssPluginVendor      from '@cssfn/jss-plugin-vendor'
 
 // cssfn:
 import type {
@@ -119,7 +117,6 @@ const customJss = createJss().setup({createGenerateId, plugins:[
     jssPluginNested(),
     jssPluginShort(),     // requires to be placed before `camelCase`
     jssPluginCamelCase(),
-    jssPluginExpand(),
     jssPluginVendor(),
 ]});
 
@@ -264,7 +261,7 @@ export interface CombinatorOptions {
 const defaultCombinatorOptions : Required<CombinatorOptions> = {
     groupSelectors  : true,
 };
-export const combinators      = (combinator: string, selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions): PropList => {
+export const combinators  = (combinator: string, selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions): PropList => {
     const {
         groupSelectors = defaultCombinatorOptions.groupSelectors,
     } = options;
@@ -302,10 +299,10 @@ export const combinators      = (combinator: string, selectors: SelectorCollecti
         );
     } // if
 };
-export const descendants      = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators(' ', selectors, styles, options);
-export const children         = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators('>', selectors, styles, options);
-export const siblings         = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators('~', selectors, styles, options);
-export const adjacentSiblings = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators('+', selectors, styles, options);
+export const descendants  = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators(' ', selectors, styles, options);
+export const children     = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators('>', selectors, styles, options);
+export const siblings     = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators('~', selectors, styles, options);
+export const nextSiblings = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators('+', selectors, styles, options);
 
 
 
@@ -329,7 +326,7 @@ export const rules = (ruleCollection: RuleCollection, options: RuleOptions = def
             
             return [
                 ...(Array.isArray(ruleCollection) ? ruleCollection : [ruleCollection])
-                .map((ruleEntrySourceList: RuleEntrySource|RuleList): OptionalOrFalse<RuleEntry>[] => { // convert: Factory<RuleEntry>|RuleEntry|RuleList => [RuleEntry]|[RuleEntry]|[...RuleList] => [RuleEntry]
+                .flatMap((ruleEntrySourceList: RuleEntrySource|RuleList): OptionalOrFalse<RuleEntry>[] => { // convert: Factory<RuleEntry>|RuleEntry|RuleList => [RuleEntry]|[RuleEntry]|[...RuleList] => [RuleEntry]
                     const isOptionalString                = (value: any): value is OptionalString => {
                         if (value === null)      return true; // optional `null`
                         if (value === undefined) return true; // optional `undefined`
@@ -443,7 +440,6 @@ export const rules = (ruleCollection: RuleCollection, options: RuleOptions = def
                     if (isOptionalRuleEntry(ruleEntrySourceList))   return [ruleEntrySourceList];
                     return ruleEntrySourceList.map((ruleEntrySource) => (typeof(ruleEntrySource) === 'function') ? ruleEntrySource() : ruleEntrySource);
                 })
-                .flat(/*depth: */1) // flatten: OptionalOrFalse<RuleEntry>[][] => OptionalOrFalse<RuleEntry>[]
                 .filter((optionalRuleEntry): optionalRuleEntry is RuleEntry => !!optionalRuleEntry)
                 .map(([selectors, styles]): readonly [NestedSelector[], StyleCollection] => {
                     let nestedSelectors = flat(selectors).filter((selector): selector is Selector => !!selector).map((selector): NestedSelector => {

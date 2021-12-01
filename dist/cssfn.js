@@ -1,14 +1,12 @@
 // jss:
 import { create as createJss, } from 'jss'; // base technology of our cssfn components
-// official jss-plugins:
-import jssPluginNested from 'jss-plugin-nested';
-import jssPluginCamelCase from 'jss-plugin-camel-case';
-import jssPluginExpand from 'jss-plugin-expand';
-import jssPluginVendor from 'jss-plugin-vendor-prefixer';
 // custom jss-plugins:
 import jssPluginGlobal from '@cssfn/jss-plugin-global';
 import { default as jssPluginExtend, mergeStyle, } from '@cssfn/jss-plugin-extend';
+import jssPluginNested from '@cssfn/jss-plugin-nested';
 import jssPluginShort from '@cssfn/jss-plugin-short';
+import jssPluginCamelCase from '@cssfn/jss-plugin-camel-case';
+import jssPluginVendor from '@cssfn/jss-plugin-vendor';
 // others libs:
 import { pascalCase } from 'pascal-case'; // pascal-case support for jss
 import { camelCase } from 'camel-case'; // camel-case  support for jss
@@ -31,7 +29,6 @@ const customJss = createJss().setup({ createGenerateId, plugins: [
         jssPluginNested(),
         jssPluginShort(),
         jssPluginCamelCase(),
-        jssPluginExpand(),
         jssPluginVendor(),
     ] });
 // styles:
@@ -168,7 +165,7 @@ export const combinators = (combinator, selectors, styles, options = defaultComb
 export const descendants = (selectors, styles, options = defaultCombinatorOptions) => combinators(' ', selectors, styles, options);
 export const children = (selectors, styles, options = defaultCombinatorOptions) => combinators('>', selectors, styles, options);
 export const siblings = (selectors, styles, options = defaultCombinatorOptions) => combinators('~', selectors, styles, options);
-export const adjacentSiblings = (selectors, styles, options = defaultCombinatorOptions) => combinators('+', selectors, styles, options);
+export const nextSiblings = (selectors, styles, options = defaultCombinatorOptions) => combinators('+', selectors, styles, options);
 const defaultRuleOptions = {
     minSpecificityWeight: 0,
 };
@@ -178,7 +175,7 @@ export const rules = (ruleCollection, options = defaultRuleOptions) => {
         const noSelectors = [];
         return [
             ...(Array.isArray(ruleCollection) ? ruleCollection : [ruleCollection])
-                .map((ruleEntrySourceList) => {
+                .flatMap((ruleEntrySourceList) => {
                 const isOptionalString = (value) => {
                     if (value === null)
                         return true; // optional `null`
@@ -263,7 +260,6 @@ export const rules = (ruleCollection, options = defaultRuleOptions) => {
                     return [ruleEntrySourceList];
                 return ruleEntrySourceList.map((ruleEntrySource) => (typeof (ruleEntrySource) === 'function') ? ruleEntrySource() : ruleEntrySource);
             })
-                .flat(/*depth: */ 1) // flatten: OptionalOrFalse<RuleEntry>[][] => OptionalOrFalse<RuleEntry>[]
                 .filter((optionalRuleEntry) => !!optionalRuleEntry)
                 .map(([selectors, styles]) => {
                 let nestedSelectors = flat(selectors).filter((selector) => !!selector).map((selector) => {

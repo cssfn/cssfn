@@ -81,7 +81,7 @@ export declare const combinators: (combinator: string, selectors: SelectorCollec
 export declare const descendants: (selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
 export declare const children: (selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
 export declare const siblings: (selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
-export declare const adjacentSiblings: (selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
+export declare const nextSiblings: (selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
 export interface RuleOptions {
     minSpecificityWeight?: number;
 }
