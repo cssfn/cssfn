@@ -31,8 +31,8 @@ export declare type RuleEntrySource = ProductOrFactory<OptionalOrFalse<RuleEntry
 export declare type RuleList = RuleEntrySource[];
 export declare type RuleCollection = SingleOrArray<RuleEntrySource | RuleList>;
 export declare type PropList = Dictionary<JssValue>;
-export declare const createJssSheet: <TClassName extends string = string>(styles: ProductOrFactory<Styles<TClassName, unknown, undefined>>) => StyleSheet<TClassName>;
-export declare const createSheet: <TClassName extends string = string>(classes: ProductOrFactory<ClassList<TClassName>>) => StyleSheet<TClassName>;
+export declare const createJssSheet: <TClassName extends string = string>(styles: ProductOrFactory<Styles<TClassName, unknown, undefined>>, sheetId?: string | undefined) => StyleSheet<TClassName>;
+export declare const createSheet: <TClassName extends string = string>(classes: ProductOrFactory<ClassList<TClassName>>, sheetId?: string | undefined) => StyleSheet<TClassName>;
 export declare const usesCssfn: <TClassName extends string = string>(classes: ProductOrFactory<ClassList<TClassName>>) => Styles<TClassName, unknown, undefined>;
 /**
  * Defines the (sub) component's composition.

@@ -11,16 +11,47 @@ import jssPluginVendor from '@cssfn/jss-plugin-vendor';
 import { pascalCase } from 'pascal-case'; // pascal-case support for jss
 import { camelCase } from 'camel-case'; // camel-case  support for jss
 import warning from 'tiny-warning';
+// utilities:
+const fastHash = (input) => {
+    let hash = 0, i, chr;
+    for (i = 0; i < input.length; i++) {
+        chr = input.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+    } // for
+    hash = Math.abs(hash);
+    return hash.toString(36).slice(-4); // get the last 4 characters
+};
 // jss:
 const createGenerateId = (options = {}) => {
-    let idCounter = 0;
-    const maxCounter = 1e10;
+    const takenIds = new Set();
     return (rule, sheet) => {
-        idCounter++;
-        if (idCounter > maxCounter)
-            warning(false, `[JSS] You might have a memory leak. ID counter is at ${idCounter}.`);
-        const prefix = sheet?.options?.classNamePrefix || 'c';
-        return `${prefix}${idCounter}`;
+        const globalID = (() => {
+            let sheetId = sheet?.options?.sheetId ?? sheet?.options?.index ?? '';
+            if (typeof (sheetId) !== 'string') {
+                sheetId = (sheetId ? fastHash(JSON.stringify(sheetId)) : '');
+                if (sheet) {
+                    if (!sheet.options)
+                        sheet.options = {};
+                    sheet.options.sheetId = sheetId;
+                } // if
+            } // if
+            const classId = rule?.key || '@global';
+            let compoundId = `${sheetId}-${classId}`; // try to generate an unique Id _without_ a counter
+            const maxCounter = 1e10;
+            let counter = 2;
+            for (; counter <= maxCounter; counter++) {
+                if (!takenIds.has(compoundId)) {
+                    takenIds.add(compoundId);
+                    return compoundId;
+                } // if
+                compoundId = `${sheetId}-${classId}-${counter}`; // try to generate an unique Id _with_ a counter
+            } // for
+            warning(false, `[JSS] You might have a memory leak. ID counter is at ${counter}.`);
+            return compoundId;
+        })();
+        const prefix = sheet?.options?.classNamePrefix ?? 'c';
+        return `${prefix}${globalID}`;
     };
 };
 const customJss = createJss().setup({ createGenerateId, plugins: [
@@ -32,11 +63,18 @@ const customJss = createJss().setup({ createGenerateId, plugins: [
         jssPluginVendor(),
     ] });
 // styles:
-export const createJssSheet = (styles) => {
-    return customJss.createStyleSheet(((typeof (styles) === 'function') ? styles() : styles));
+let sheetCounter = 0;
+export const createJssSheet = (styles, sheetId) => {
+    sheetCounter++;
+    const stylesObj = ((typeof (styles) === 'function') ? styles() : styles);
+    return customJss.createStyleSheet(stylesObj, 
+    /*options:*/ {
+        index: sheetCounter,
+        sheetId: sheetId ?? stylesObj, // custom prop - for identifier purpose
+    });
 };
-export const createSheet = (classes) => {
-    return createJssSheet(() => usesCssfn(classes));
+export const createSheet = (classes, sheetId) => {
+    return createJssSheet(() => usesCssfn(classes), sheetId);
 };
 // cssfn hooks:
 export const usesCssfn = (classes) => {

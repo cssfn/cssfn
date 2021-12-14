@@ -94,21 +94,64 @@ export type PropList                                             = Dictionary<Js
 
 
 
+// utilities:
+
+const fastHash = (input: string) => {
+    let hash = 0, i, chr;
+    for (i = 0; i < input.length; i++) {
+        chr = input.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+    } // for
+    
+    hash = Math.abs(hash);
+    return hash.toString(36).slice(-4); // get the last 4 characters
+};
+
+
+
 // jss:
 const createGenerateId : CreateGenerateId = (options = {}) => {
-    let idCounter    = 0;
-    const maxCounter = 1e10;
-    
-    
+    const takenIds = new Set<string>();
     
     return (rule, sheet): string => {
-        idCounter++;
-        if (idCounter > maxCounter) warning(false, `[JSS] You might have a memory leak. ID counter is at ${idCounter}.`)
+        const globalID = ((): string => {
+            let   sheetId : string|object|null|undefined = (sheet?.options as any)?.sheetId ?? sheet?.options?.index ?? '';
+            if (typeof(sheetId) !== 'string') {
+                sheetId = (sheetId ? fastHash(JSON.stringify(sheetId)) : '');
+                
+                if (sheet) {
+                    if (!sheet.options) sheet.options = ({} as any);
+                    (sheet.options as any).sheetId = sheetId;
+                } // if
+            } // if
+            
+            const classId = rule?.key || '@global';
+            let   compoundId = `${sheetId}-${classId}`; // try to generate an unique Id _without_ a counter
+            
+            
+            
+            const maxCounter = 1e10;
+            let   counter    = 2;
+            for (; counter <= maxCounter; counter++) {
+                if (!takenIds.has(compoundId)) {
+                    takenIds.add(compoundId);
+                    return compoundId;
+                } // if
+                
+                compoundId = `${sheetId}-${classId}-${counter}`; // try to generate an unique Id _with_ a counter
+            } // for
+            
+            
+            
+            warning(false, `[JSS] You might have a memory leak. ID counter is at ${counter}.`);
+            return compoundId;
+        })();
         
         
         
-        const prefix = sheet?.options?.classNamePrefix || 'c';
-        return `${prefix}${idCounter}`;
+        const prefix = sheet?.options?.classNamePrefix ?? 'c';
+        return `${prefix}${globalID}`;
     };
 };
 const customJss = createJss().setup({createGenerateId, plugins:[
@@ -123,14 +166,23 @@ const customJss = createJss().setup({createGenerateId, plugins:[
 
 
 // styles:
-export const createJssSheet = <TClassName extends ClassName = ClassName>(styles: ProductOrFactory<Styles<TClassName>>): StyleSheet<TClassName> => {
+let sheetCounter = 0;
+export const createJssSheet = <TClassName extends ClassName = ClassName>(styles: ProductOrFactory<Styles<TClassName>>, sheetId?: string): StyleSheet<TClassName> => {
+    sheetCounter++;
+    
+    const stylesObj = ((typeof(styles) === 'function') ? styles() : styles);
     return customJss.createStyleSheet(
-        ((typeof(styles) === 'function') ? styles() : styles)
+        stylesObj,
+        /*options:*/ ({
+            index   : sheetCounter,         // 0 by default - determines DOM rendering order, higher number = higher specificity (inserted after).
+            sheetId : sheetId ?? stylesObj, // custom prop - for identifier purpose
+        } as {})
     );
 }
-export const createSheet    = <TClassName extends ClassName = ClassName>(classes: ProductOrFactory<ClassList<TClassName>>): StyleSheet<TClassName> => {
+export const createSheet    = <TClassName extends ClassName = ClassName>(classes: ProductOrFactory<ClassList<TClassName>>, sheetId?: string): StyleSheet<TClassName> => {
     return createJssSheet(
-        () => usesCssfn(classes)
+        () => usesCssfn(classes),
+        sheetId
     );
 }
 
