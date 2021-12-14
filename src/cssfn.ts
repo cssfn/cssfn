@@ -105,14 +105,14 @@ const fastHash = (input: string) => {
     } // for
     
     hash = Math.abs(hash);
-    return hash.toString(36).slice(-4); // get the last 4 characters
+    return hash.toString(36).slice(-5); // get the last 5 characters
 };
 
 
 
 // jss:
 const createGenerateId : CreateGenerateId = (options = {}) => {
-    const takenIds = new Set<string>();
+    const takenHashes = new Set<string>();
     
     return (rule, sheet): string => {
         const globalID = ((): string => {
@@ -126,26 +126,27 @@ const createGenerateId : CreateGenerateId = (options = {}) => {
                 } // if
             } // if
             
-            const classId = rule?.key || '@global';
-            let   compoundId = `${sheetId}-${classId}`; // try to generate an unique Id _without_ a counter
+            const classId    = rule?.key || '@global';
+            const compoundId = `${sheetId}${classId}`; // try to generate an unique Id _without_ a counter
+            let   hash       = fastHash(compoundId);
             
             
             
             const maxCounter = 1e10;
             let   counter    = 2;
             for (; counter <= maxCounter; counter++) {
-                if (!takenIds.has(compoundId)) {
-                    takenIds.add(compoundId);
-                    return compoundId;
+                if (!takenHashes.has(hash)) {
+                    takenHashes.add(hash);
+                    return hash;
                 } // if
                 
-                compoundId = `${sheetId}-${classId}-${counter}`; // try to generate an unique Id _with_ a counter
+                hash = fastHash(`${compoundId}${counter}`); // try to generate an unique Id _with_ a counter
             } // for
             
             
             
             warning(false, `[JSS] You might have a memory leak. ID counter is at ${counter}.`);
-            return compoundId;
+            return hash;
         })();
         
         
