@@ -24,7 +24,7 @@ const fastHash = (input) => {
 };
 // jss:
 const createGenerateId = (options = {}) => {
-    const takenHashes = new Set();
+    const takenHashes = new Map();
     return (rule, sheet) => {
         const globalID = (() => {
             let sheetId = sheet?.options?.sheetId ?? sheet?.options?.index ?? '';
@@ -42,8 +42,9 @@ const createGenerateId = (options = {}) => {
             const maxCounter = 1e10;
             let counter = 2;
             for (; counter <= maxCounter; counter++) {
-                if (!takenHashes.has(hash)) {
-                    takenHashes.add(hash);
+                const owner = takenHashes.get(hash);
+                if (!owner || (owner === compoundId)) {
+                    takenHashes.set(hash, compoundId);
                     return hash;
                 } // if
                 hash = fastHash(`${compoundId}${counter}`); // try to generate an unique Id _with_ a counter

@@ -112,7 +112,7 @@ const fastHash = (input: string) => {
 
 // jss:
 const createGenerateId : CreateGenerateId = (options = {}) => {
-    const takenHashes = new Set<string>();
+    const takenHashes = new Map<string, string>();
     
     return (rule, sheet): string => {
         const globalID = ((): string => {
@@ -135,8 +135,9 @@ const createGenerateId : CreateGenerateId = (options = {}) => {
             const maxCounter = 1e10;
             let   counter    = 2;
             for (; counter <= maxCounter; counter++) {
-                if (!takenHashes.has(hash)) {
-                    takenHashes.add(hash);
+                const owner = takenHashes.get(hash);
+                if (!owner || (owner === compoundId)) {
+                    takenHashes.set(hash, compoundId);
                     return hash;
                 } // if
                 
