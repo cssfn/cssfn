@@ -322,6 +322,7 @@ export const combinators  = (combinator: string, selectors: SelectorCollection, 
     
     
     
+    const withCombinator = `&${combinator}`;
     const combiSelectors = flat(selectors).map((selector) => {
         if (!selector) selector = '*'; // empty selector => match any element
         
@@ -330,7 +331,7 @@ export const combinators  = (combinator: string, selectors: SelectorCollection, 
         
         if (((combinator === ' ') || (combinator === '>')) && selector.startsWith('::')) return `&${selector}`; // pseudo element => attach the parent itself (for descendants & children)
         
-        return `&${combinator}${selector}`;
+        return `${withCombinator}${selector}`;
     });
     if (!combiSelectors.length) return {}; // no selector => return empty
     
@@ -342,8 +343,62 @@ export const combinators  = (combinator: string, selectors: SelectorCollection, 
     
     
     if (groupSelectors) {
+        if (combiSelectors.length === 1) return {
+            [combiSelectors[0]]: (mergedStyles as JssValue),
+        };
+        
+        
+        
+        const selectorsGroups = combiSelectors.map((selector) => {
+            const withCombi = selector.startsWith(withCombinator);
+            if (withCombi) return { withCombi: selector };
+            
+            const onlyBeginAmp = (selector.lastIndexOf('&') === 0);
+            if (onlyBeginAmp) return { begAmp: selector };
+            
+            const onlyEndAmp = (selector.indexOf('&') === (selector.length - 1));
+            if (onlyEndAmp) return { endAmp: selector };
+            
+            return { other: selector };
+        });
+        const withCombiSelectors   = selectorsGroups.filter((group) => !!group.withCombi).map((group) => group.withCombi! );
+        const begAmpSelectors   = selectorsGroups.filter((group)    => !!group.begAmp   ).map((group) => group.begAmp!    );
+        const endAmpSelectors   = selectorsGroups.filter((group)    => !!group.endAmp   ).map((group) => group.endAmp!    );
+        const ungroupableSelectors = selectorsGroups.filter((group) => !!group.other    ).map((group) => group.other!     );
         return {
-            [combiSelectors.join(',')]: (mergedStyles as JssValue),
+            ...(withCombiSelectors.length ? {
+                [
+                    (withCombiSelectors.length === 1)
+                    ?
+                    withCombiSelectors[0]
+                    :
+                    `${withCombinator}:is(${withCombiSelectors.map((selector) => selector.slice(withCombinator.length)).join(',')})`
+                ]: (mergedStyles as JssValue),
+            } : {}),
+            
+            ...(begAmpSelectors.length ? {
+                [
+                    (begAmpSelectors.length === 1)
+                    ?
+                    begAmpSelectors[0]
+                    :
+                    `&:is(${begAmpSelectors.map((selector) => selector.slice(1)).join(',')})`
+                ]: (mergedStyles as JssValue),
+            } : {}),
+            
+            ...(endAmpSelectors.length ? {
+                [
+                    (endAmpSelectors.length === 1)
+                    ?
+                    endAmpSelectors[0]
+                    :
+                    `:is(${endAmpSelectors.map((selector) => selector.slice(0, -1)).join(',')})&`
+                ]: (mergedStyles as JssValue),
+            } : {}),
+            
+            ...(ungroupableSelectors.length ? {
+                [ungroupableSelectors.join(',')]: (mergedStyles as JssValue),
+            } : {}),
         };
     }
     else {
@@ -558,8 +613,42 @@ export const rules = (ruleCollection: RuleCollection, options: RuleOptions = def
                 ] as const)
                 .filter((tuple): tuple is (readonly [typeof tuple[0], Style]) => !!tuple[1]) // filter out empty `mergedStyles`
                 .map(([nestedSelectors, mergedStyles]): Style => {
+                    const selectorsGroups = nestedSelectors.map((selector) => {
+                        const onlyBeginAmp = (selector.lastIndexOf('&') === 0);
+                        if (onlyBeginAmp) return { begAmp: selector };
+                        
+                        const onlyEndAmp = (selector.indexOf('&') === (selector.length - 1));
+                        if (onlyEndAmp) return { endAmp: selector };
+                        
+                        return { other: selector };
+                    });
+                    const begAmpSelectors   = selectorsGroups.filter((group)    => !!group.begAmp   ).map((group) => group.begAmp!    );
+                    const endAmpSelectors   = selectorsGroups.filter((group)    => !!group.endAmp   ).map((group) => group.endAmp!    );
+                    const ungroupableSelectors = selectorsGroups.filter((group) => !!group.other    ).map((group) => group.other!     );
                     return {
-                        [nestedSelectors.join(',')] : mergedStyles as JssValue,
+                        ...(begAmpSelectors.length ? {
+                            [
+                                (begAmpSelectors.length === 1)
+                                ?
+                                begAmpSelectors[0]
+                                :
+                                `&:is(${begAmpSelectors.map((selector) => selector.slice(1)).join(',')})`
+                            ]: (mergedStyles as JssValue),
+                        } : {}),
+                        
+                        ...(endAmpSelectors.length ? {
+                            [
+                                (endAmpSelectors.length === 1)
+                                ?
+                                endAmpSelectors[0]
+                                :
+                                `:is(${endAmpSelectors.map((selector) => selector.slice(0, -1)).join(',')})&`
+                            ]: (mergedStyles as JssValue),
+                        } : {}),
+                        
+                        ...(ungroupableSelectors.length ? {
+                            [ungroupableSelectors.join(',')]: (mergedStyles as JssValue),
+                        } : {}),
                     };
                 }),
                 
