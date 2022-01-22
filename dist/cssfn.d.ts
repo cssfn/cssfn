@@ -1,13 +1,28 @@
-import { JssStyle, JssValue, Classes, Styles, StyleSheet } from 'jss';
-import { ExtendableStyle } from '@cssfn/jss-plugin-extend';
-import type { OptionalOrFalse, SingleOrArray, SingleOrDeepArray, ProductOrFactoryOrDeepArray, ProductOrFactory, Dictionary, ValueOf, DictionaryOf } from '@cssfn/types';
+import { Classes, Styles, StyleSheet } from 'jss';
+import type { OptionalOrFalse, SingleOrDeepArray, ProductOrFactoryOrDeepArray, ProductOrFactory, Dictionary, ValueOf, DictionaryOf } from '@cssfn/types';
 import type { Prop, PropEx, Cust } from '@cssfn/css-types';
+import { Combinator, SelectorList as SelectorModelList } from '@cssfn/css-selector';
+import { Properties as CssProperties } from 'csstype';
 import { pascalCase } from 'pascal-case';
 import { camelCase } from 'camel-case';
-export type { JssStyle, JssValue, Classes, Styles, StyleSheet };
+export type { Classes, Styles, StyleSheet };
 export type { Prop, PropEx, Cust };
 export type { Dictionary, ValueOf, DictionaryOf };
-export declare type Style = (ExtendableStyle & {});
+export declare type KnownCssPropName = keyof CssProperties<string | number>;
+export declare type KnownCssPropValue<PropName extends KnownCssPropName> = Exclude<CssProperties<string | number>[PropName], (undefined | null)>;
+export declare type KnownCssProps = {
+    [PropName in keyof CssProperties<string | number>]?: (KnownCssPropValue<PropName> | [[KnownCssPropValue<PropName>], '!important'] | CssValue);
+};
+export declare type BasicCssValue = (string & {}) | (number & {}) | PropEx.Keyframes;
+export declare type CssValue = undefined | null | BasicCssValue | BasicCssValue[] | (BasicCssValue | BasicCssValue[] | '!important')[];
+export declare type CustomCssProps = {
+    [PropName: Exclude<string, KnownCssPropName>]: CssValue;
+};
+export declare type CssProps = KnownCssProps & CustomCssProps;
+export declare type Rule = {
+    [PropName: symbol]: StyleCollection;
+};
+export declare type Style = CssProps & Rule;
 export declare type StyleCollection = ProductOrFactoryOrDeepArray<OptionalOrFalse<Style>>;
 export declare type ClassName = string;
 export declare type RealClass = (`.${ClassName}` & {});
@@ -16,29 +31,12 @@ export declare type Class = RealClass | PseudoClass;
 export declare type ClassEntry<TClassName extends ClassName = ClassName> = readonly [TClassName, StyleCollection];
 export declare type ClassList<TClassName extends ClassName = ClassName> = ClassEntry<TClassName>[];
 export declare type OptionalString = OptionalOrFalse<string>;
-export declare type UniversalSelector = ('*' & {});
-export declare type RealElementSelector = (string & {});
-export declare type PseudoElementSelector = (`::${string}` & {});
-export declare type ElementSelector = RealElementSelector | PseudoElementSelector;
-export declare type ClassSelector = (Class & {});
-export declare type IdSelector = (`#${string}` & {});
-export declare type SingleSelector = UniversalSelector | ElementSelector | ClassSelector | IdSelector;
-export declare type Selector = SingleSelector | (`${SingleSelector}${SingleSelector}` & {}) | (`${SingleSelector}${SingleSelector}${SingleSelector}` & {}) | (`${SingleSelector}${SingleSelector}${SingleSelector}${SingleSelector}` & {}) | (`${SingleSelector}${SingleSelector}${SingleSelector}${SingleSelector}${SingleSelector}` & {});
+export declare type Selector = (string & {});
 export declare type SelectorCollection = SingleOrDeepArray<OptionalOrFalse<Selector>>;
-export declare type NestedSelector = '&' | (`&${Selector}` & {}) | (`${Selector}&` & {});
-export declare type RuleEntry = readonly [SelectorCollection, StyleCollection];
-export declare type RuleEntrySource = ProductOrFactory<OptionalOrFalse<RuleEntry>>;
-export declare type RuleList = RuleEntrySource[];
-export declare type RuleCollection = SingleOrArray<RuleEntrySource | RuleList>;
-export declare type PropList = Dictionary<JssValue>;
+export declare type RuleCollection = ProductOrFactoryOrDeepArray<OptionalOrFalse<Rule>>;
 export declare const createJssSheet: <TClassName extends string = string>(styles: ProductOrFactory<Styles<TClassName, unknown, undefined>>, sheetId?: string | undefined) => StyleSheet<TClassName>;
 export declare const createSheet: <TClassName extends string = string>(classes: ProductOrFactory<ClassList<TClassName>>, sheetId?: string | undefined) => StyleSheet<TClassName>;
 export declare const usesCssfn: <TClassName extends string = string>(classes: ProductOrFactory<ClassList<TClassName>>) => Styles<TClassName, unknown, undefined>;
-/**
- * Defines the (sub) component's composition.
- * @returns A `StyleCollection` represents the (sub) component's composition.
- */
-export declare const composition: (styles: StyleCollection[]) => StyleCollection;
 /**
  * Merges the (sub) component's composition to single `Style`.
  * @returns A `Style` represents the merged (sub) component's composition
@@ -46,86 +44,104 @@ export declare const composition: (styles: StyleCollection[]) => StyleCollection
  * `null` represents an empty `Style`.
  */
 export declare const mergeStyles: (styles: StyleCollection) => Style | null;
+export interface SelectorOptions {
+    groupSelectors?: boolean;
+    specificityWeight?: number | null;
+    minSpecificityWeight?: number | null;
+    maxSpecificityWeight?: number | null;
+}
+export declare const mergeSelectors: (selectorList: SelectorModelList, options?: SelectorOptions) => SelectorModelList;
 /**
  * Defines the additional component's composition.
  * @returns A `ClassEntry` represents the component's composition.
  */
-export declare const compositionOf: <TClassName extends string = string>(className: TClassName, styles: StyleCollection[]) => ClassEntry<TClassName>;
+export declare const compositionOf: <TClassName extends string = string>(className: TClassName, ...styles: StyleCollection[]) => ClassEntry<TClassName>;
 /**
  * Defines the main component's composition.
  * @returns A `ClassEntry` represents the component's composition.
  */
-export declare const mainComposition: (styles: StyleCollection[]) => ClassEntry<"main">;
+export declare const mainComposition: (...styles: StyleCollection[]) => ClassEntry<"main">;
 /**
  * Defines the global style applied to a whole document.
  * @returns A `ClassEntry` represents the global style.
  */
-export declare const globalDef: (ruleCollection: RuleCollection) => ClassEntry<"">;
-export declare const imports: (styles: StyleCollection[]) => StyleCollection;
+export declare const globalDef: (...rules: RuleCollection[]) => ClassEntry<"">;
 /**
- * Defines component's layout.
- * @returns A `Style` represents the component's layout.
+ * @deprecated move to `style()`
+ * Defines the (sub) component's composition.
+ * @returns A `Rule` represents the (sub) component's composition.
  */
-export declare const layout: (style: Style) => Style;
+export declare const composition: (...styles: StyleCollection[]) => Rule;
+/**
+ * Defines component's style.
+ * @returns A `Rule` represents the component's style.
+ */
+export declare const style: (style: Style) => Rule;
+/**
+ * @deprecated move to `style()`
+ * Defines component's layout.
+ * @returns A `Rule` represents the component's layout.
+ */
+export declare const layout: (style: Style) => Rule;
 /**
  * Defines component's variable(s).
- * @returns A `Style` represents the component's variable(s).
+ * @returns A `Rule` represents the component's variable(s).
  */
 export declare const vars: (items: {
-    [name: string]: JssValue;
-}) => Style;
-export interface CombinatorOptions {
-    groupSelectors?: boolean;
-}
-export declare const combinators: (combinator: string, selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
-export declare const descendants: (selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
-export declare const children: (selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
-export declare const siblings: (selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
-export declare const nextSiblings: (selectors: SelectorCollection, styles: StyleCollection, options?: CombinatorOptions) => PropList;
-export interface RuleOptions {
-    minSpecificityWeight?: number;
-}
-export declare const rules: (ruleCollection: RuleCollection, options?: RuleOptions) => StyleCollection;
+    [key: `--${string}`]: CssValue;
+}) => Rule;
+export declare const imports: (...styles: StyleCollection[]) => Rule;
+/**
+ * Defines component's `style(s)` that is applied when the specified `selector(s)` meet the conditions.
+ * @returns A `Rule` represents the component's rule.
+ */
+export declare const rule: (rules: SelectorCollection, styles: StyleCollection, options?: SelectorOptions) => Rule;
+export declare const rules: (rules: RuleCollection, options?: SelectorOptions) => Rule;
 /**
  * Defines component's variants.
- * @returns A `StyleCollection` represents the component's variants.
+ * @returns A `Rule` represents the component's variants.
  */
-export declare const variants: (variants: RuleCollection, options?: RuleOptions) => StyleCollection;
+export declare const variants: (variants: RuleCollection, options?: SelectorOptions) => Rule;
+export interface StateOptions extends SelectorOptions {
+    inherit?: boolean;
+}
 /**
  * Defines component's states.
  * @param inherit `true` to inherit states from parent element -or- `false` to create independent states.
- * @returns A `StyleCollection` represents the component's states.
+ * @returns A `Rule` represents the component's states.
  */
-export declare const states: (states: RuleCollection | ((inherit: boolean) => RuleCollection), inherit?: boolean, options?: RuleOptions) => StyleCollection;
-/**
- * Defines component's `style(s)` that is applied when the specified `selector(s)` meet the conditions.
- * @returns A `RuleEntry` represents the component's rule.
- */
-export declare const rule: (selectors: SelectorCollection, styles: StyleCollection) => RuleEntry;
-export declare const noRule: (styles: StyleCollection) => RuleEntry;
-export declare const emptyRule: () => RuleEntry;
-export declare const atRoot: (styles: StyleCollection) => RuleEntry;
-export declare const atGlobal: (styles: StyleCollection) => RuleEntry;
-export declare const fontFace: (styles: StyleCollection) => RuleEntry;
-export declare const isFirstChild: (styles: StyleCollection) => RuleEntry;
-export declare const isNotFirstChild: (styles: StyleCollection) => RuleEntry;
-export declare const isLastChild: (styles: StyleCollection) => RuleEntry;
-export declare const isNotLastChild: (styles: StyleCollection) => RuleEntry;
-export declare const isNthChild: (step: number, offset: number, styles: StyleCollection) => RuleEntry;
-export declare const isNotNthChild: (step: number, offset: number, styles: StyleCollection) => RuleEntry;
-export declare const isNthLastChild: (step: number, offset: number, styles: StyleCollection) => RuleEntry;
-export declare const isNotNthLastChild: (step: number, offset: number, styles: StyleCollection) => RuleEntry;
-export declare const isActive: (styles: StyleCollection) => RuleEntry;
-export declare const isNotActive: (styles: StyleCollection) => RuleEntry;
-export declare const isFocus: (styles: StyleCollection) => RuleEntry;
-export declare const isNotFocus: (styles: StyleCollection) => RuleEntry;
-export declare const isFocusVisible: (styles: StyleCollection) => RuleEntry;
-export declare const isNotFocusVisible: (styles: StyleCollection) => RuleEntry;
-export declare const isHover: (styles: StyleCollection) => RuleEntry;
-export declare const isNotHover: (styles: StyleCollection) => RuleEntry;
-export declare const isEmpty: (styles: StyleCollection) => RuleEntry;
-export declare const isNotEmpty: (styles: StyleCollection) => RuleEntry;
-export declare const iif: <T extends Style | PropList>(condition: boolean, content: T) => T;
+export declare const states: (states: RuleCollection | ((inherit: boolean) => RuleCollection), options?: StateOptions) => Rule;
+export declare const keyframes: (name: string, items: PropEx.Keyframes) => Rule;
+export declare const noRule: (...styles: StyleCollection[]) => Rule;
+export declare const emptyRule: () => Rule;
+export declare const fallbacks: (...styles: StyleCollection[]) => Rule;
+export declare const fontFace: (...styles: StyleCollection[]) => Rule;
+export declare const atGlobal: (...rules: RuleCollection[]) => Rule;
+export declare const atRoot: (...styles: StyleCollection[]) => Rule;
+export declare const isFirstChild: (...styles: StyleCollection[]) => Rule;
+export declare const isNotFirstChild: (...styles: StyleCollection[]) => Rule;
+export declare const isLastChild: (...styles: StyleCollection[]) => Rule;
+export declare const isNotLastChild: (...styles: StyleCollection[]) => Rule;
+export declare const isNthChild: (step: number, offset: number, ...styles: StyleCollection[]) => Rule;
+export declare const isNotNthChild: (step: number, offset: number, ...styles: StyleCollection[]) => Rule;
+export declare const isNthLastChild: (step: number, offset: number, ...styles: StyleCollection[]) => Rule;
+export declare const isNotNthLastChild: (step: number, offset: number, ...styles: StyleCollection[]) => Rule;
+export declare const isActive: (...styles: StyleCollection[]) => Rule;
+export declare const isNotActive: (...styles: StyleCollection[]) => Rule;
+export declare const isFocus: (...styles: StyleCollection[]) => Rule;
+export declare const isNotFocus: (...styles: StyleCollection[]) => Rule;
+export declare const isFocusVisible: (...styles: StyleCollection[]) => Rule;
+export declare const isNotFocusVisible: (...styles: StyleCollection[]) => Rule;
+export declare const isHover: (...styles: StyleCollection[]) => Rule;
+export declare const isNotHover: (...styles: StyleCollection[]) => Rule;
+export declare const isEmpty: (...styles: StyleCollection[]) => Rule;
+export declare const isNotEmpty: (...styles: StyleCollection[]) => Rule;
+export declare const combinators: (combinator: Combinator, selectors: SelectorCollection, styles: StyleCollection, options?: SelectorOptions) => Rule;
+export declare const descendants: (selectors: SelectorCollection, styles: StyleCollection, options?: SelectorOptions) => Rule;
+export declare const children: (selectors: SelectorCollection, styles: StyleCollection, options?: SelectorOptions) => Rule;
+export declare const siblings: (selectors: SelectorCollection, styles: StyleCollection, options?: SelectorOptions) => Rule;
+export declare const nextSiblings: (selectors: SelectorCollection, styles: StyleCollection, options?: SelectorOptions) => Rule;
+export declare const iif: <T extends CssProps | Rule | Style>(condition: boolean, content: T) => T;
 /**
  * Escapes some sets of character in svg data, so it will be valid to be written in css.
  * @param svgData The raw svg data to be escaped.

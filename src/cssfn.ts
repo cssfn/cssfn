@@ -1,8 +1,6 @@
 // jss:
 import {
     // general types:
-    JssStyle,
-    JssValue,
     Classes,
     Styles,
     StyleSheet,
@@ -13,12 +11,6 @@ import {
     create as createJss,
 }                           from 'jss'           // base technology of our cssfn components
 // custom jss-plugins:
-import jssPluginGlobal      from '@cssfn/jss-plugin-global'
-import {
-    default as jssPluginExtend,
-    ExtendableStyle,
-    mergeStyle,
-}                           from '@cssfn/jss-plugin-extend'
 import jssPluginNested      from '@cssfn/jss-plugin-nested'
 import jssPluginShort       from '@cssfn/jss-plugin-short'
 import jssPluginCamelCase   from '@cssfn/jss-plugin-camel-case'
@@ -27,7 +19,6 @@ import jssPluginVendor      from '@cssfn/jss-plugin-vendor'
 // cssfn:
 import type {
     OptionalOrFalse,
-    SingleOrArray,
     SingleOrDeepArray,
     ProductOrFactoryOrDeepArray,
     ProductOrFactory,
@@ -41,8 +32,59 @@ import type {
     PropEx,
     Cust,
 }                           from '@cssfn/css-types'   // ts defs support for cssfn
+import {
+    // types:
+    SimpleSelector   as SimpleSelectorModel,
+    Combinator,
+    Selector         as SelectorModel,
+    SelectorList     as SelectorModelList,
+    PureSelector     as PureSelectorModel,
+    PureSelectorList as PureSelectorModelList,
+    
+    
+    
+    // parses:
+    parseSelectors,
+    
+    
+    
+    // creates & tests:
+    parentSelector,
+    pseudoClassSelector,
+    isSimpleSelector,
+    isParentSelector,
+    isClassOrPseudoClassSelector,
+    isPseudoElementSelector,
+    isNotPseudoElementSelector,
+    isCombinator,
+    createSelector,
+    createSelectorList,
+    isNotEmptySelectorEntry,
+    isNotEmptySelector,
+    isNotEmptySelectors,
+    
+    
+    
+    // renders:
+    selectorsToString,
+    
+    
+    
+    // transforms:
+    groupSelectors,
+    groupSelector,
+    ungroupSelector,
+    
+    
+    
+    // measures:
+    calculateSpecificity,
+}                           from '@cssfn/css-selector'
 
 // others libs:
+import {
+    Properties as CssProperties,
+}                           from 'csstype'
 import { pascalCase }       from 'pascal-case'   // pascal-case support for jss
 import { camelCase }        from 'camel-case'    // camel-case  support for jss
 import warning              from 'tiny-warning'
@@ -51,46 +93,44 @@ import warning              from 'tiny-warning'
 
 // general types:
 
-export type { JssStyle, JssValue, Classes, Styles, StyleSheet }
+export type { Classes, Styles, StyleSheet }
 export type { Prop, PropEx, Cust }
 export type { Dictionary, ValueOf, DictionaryOf }
 
-export type Style                                                = (ExtendableStyle & {})
-export type StyleCollection                                      = ProductOrFactoryOrDeepArray<OptionalOrFalse<Style>>
+export type KnownCssPropName                   = keyof CssProperties<string|number>
+export type KnownCssPropValue
+    <PropName extends KnownCssPropName>        = Exclude<CssProperties<string|number>[PropName], (undefined|null)>
+// comment docs disappears in TypeScript:
+// export type KnownCssProps                   = { [PropName in KnownCssPropName] ?: (KnownCssPropValue<PropName>|[[KnownCssPropValue<PropName>], '!important']|CssValue) }
+// comment docs preserves in TypeScript:
+export type KnownCssProps                      = { [PropName in keyof CssProperties<string|number>] ?: (KnownCssPropValue<PropName>|[[KnownCssPropValue<PropName>], '!important']|CssValue) }
 
-export type ClassName                                            = string        // not a really string: [A-Z_a-z-]+
-export type RealClass                                            = (`.${ClassName}` & {})
-export type PseudoClass                                          = (`:${ClassName}` & {})
-export type Class                                                = RealClass|PseudoClass
-export type ClassEntry<TClassName extends ClassName = ClassName> = readonly [TClassName, StyleCollection]
-export type ClassList <TClassName extends ClassName = ClassName> = ClassEntry<TClassName>[]
+export type BasicCssValue                      = (string & {}) | (number & {}) | PropEx.Keyframes
+export type CssValue                           = undefined | null | BasicCssValue | BasicCssValue[] | (BasicCssValue|BasicCssValue[]|'!important')[]
 
-export type OptionalString                                       = OptionalOrFalse<string>
+export type CustomCssProps                     = { [PropName: Exclude<string, KnownCssPropName>] : CssValue }
 
-export type UniversalSelector                                    = ('*'           & {})
-export type RealElementSelector                                  = (string        & {}) // not a really string: [A-Z_a-z-]+
-export type PseudoElementSelector                                = (`::${string}` & {}) // not a really string: [A-Z_a-z-]+
-export type ElementSelector                                      = RealElementSelector|PseudoElementSelector
-export type ClassSelector                                        = (Class  & {})
-export type IdSelector                                           = (`#${string}`  & {})
-export type SingleSelector                                       = UniversalSelector|ElementSelector|ClassSelector|IdSelector
-export type Selector                                             = | SingleSelector
-                                                                   | (`${SingleSelector}${SingleSelector}`                                                    & {})
-                                                                   | (`${SingleSelector}${SingleSelector}${SingleSelector}`                                   & {})
-                                                                   | (`${SingleSelector}${SingleSelector}${SingleSelector}${SingleSelector}`                  & {})
-                                                                   | (`${SingleSelector}${SingleSelector}${SingleSelector}${SingleSelector}${SingleSelector}` & {})
-export type SelectorCollection                                   = SingleOrDeepArray<OptionalOrFalse<Selector>>
+export type CssProps                           = KnownCssProps & CustomCssProps
+export type Rule                               = { [PropName: symbol] : StyleCollection }
 
-export type NestedSelector                                       = | '&'
-                                                                   | (`&${Selector}` & {})
-                                                                   | (`${Selector}&` & {})
+export type Style                              = CssProps & Rule
+export type StyleCollection                    = ProductOrFactoryOrDeepArray<OptionalOrFalse<Style>>
 
-export type RuleEntry                                            = readonly [SelectorCollection, StyleCollection]
-export type RuleEntrySource                                      = ProductOrFactory<OptionalOrFalse<RuleEntry>>
-export type RuleList                                             = RuleEntrySource[]
-export type RuleCollection                                       = SingleOrArray<RuleEntrySource|RuleList>
+export type ClassName                          = string        // not a really string: [A-Z_a-z-]+
+export type RealClass                          = (`.${ClassName}` & {})
+export type PseudoClass                        = (`:${ClassName}` & {})
+export type Class                              = RealClass|PseudoClass
+export type ClassEntry
+    <TClassName extends ClassName = ClassName> = readonly [TClassName, StyleCollection]
+export type ClassList
+    <TClassName extends ClassName = ClassName> = ClassEntry<TClassName>[]
 
-export type PropList                                             = Dictionary<JssValue>
+export type OptionalString                     = OptionalOrFalse<string>
+
+export type Selector                           = (string & {})
+export type SelectorCollection                 = SingleOrDeepArray<OptionalOrFalse<Selector>>
+
+export type RuleCollection                     = ProductOrFactoryOrDeepArray<OptionalOrFalse<Rule>>
 
 
 
@@ -157,9 +197,7 @@ const createGenerateId : CreateGenerateId = (options = {}) => {
     };
 };
 const customJss = createJss().setup({createGenerateId, plugins:[
-    jssPluginGlobal(),    // requires to be placed before all other plugins
-    jssPluginExtend(),
-    jssPluginNested(),
+    jssPluginNested((styles) => mergeStyles(styles as StyleCollection) as {}),
     jssPluginShort(),     // requires to be placed before `camelCase`
     jssPluginCamelCase(),
     jssPluginVendor(),
@@ -199,25 +237,131 @@ export const usesCssfn = <TClassName extends ClassName = ClassName>(classes: Pro
             but to make more compatible with JSS' official `jss-plugin-global`
             we convert empty `className` to `'@global'`
          */
-        .map(([className, styles]): Style => ({ [className || '@global'] : mergeStyles(styles) })) // convert each `[className, styles]` to `{ className : mergeStyles(styles) | null }`
-    ) ?? {}) as Styles<TClassName>;
+        .map(([className, styles]): Style => ({ [className || '@global'] : mergeStyles(styles) as CssValue })) // convert each `[className, styles]` to `{ className : mergeStyles(styles) | null }`
+    ) ?? emptyMergedStyle) as Styles<TClassName>;
 }
 
 
 
-// compositions:
-/**
- * Defines the (sub) component's composition.
- * @returns A `StyleCollection` represents the (sub) component's composition.
- */
-export const composition     = (styles: StyleCollection[]): StyleCollection => styles;
+// processors:
+
+const isStyle      = (object: any): object is Style => object && (typeof(object) === 'object') && !Array.isArray(object);
+const mergeLiteral = (style: Style, newStyle: Style): void => {
+    for (const [propName, newPropValue] of [
+        ...Object.entries(newStyle),
+        ...Object.getOwnPropertySymbols(newStyle).map((sym) => [sym, newStyle[sym]] as const),
+    ]) { // loop through `newStyle`'s props
+        
+        
+        
+        if (!isStyle(newPropValue)) {
+            // `newPropValue` is not a `Style` => unmergeable => add/overwrite `newPropValue` into `style`:
+            delete style[propName]; // delete the old prop (if any), so the new prop always placed at the end of LiteralObject
+            style[propName] = newPropValue as any; // add/overwrite
+        }
+        else {
+            // `newPropValue` is a `Style` => possibility to merge with `currentPropValue`
+            
+            const currentPropValue = style[propName];
+            if (!isStyle(currentPropValue)) {
+                // `currentPropValue` is not a `Style` => unmergeable => add/overwrite `newPropValue` into `style`:
+                delete style[propName]; // delete the old prop (if any), so the new prop always placed at the end of LiteralObject
+                style[propName] = newPropValue as any; // add/overwrite
+            }
+            else {
+                // both `newPropValue` & `currentPropValue` are `Style` => merge them recursively (deeply):
+                
+                const currentValueClone = {...currentPropValue} as Style; // clone the `currentPropValue` to avoid side effect, because the `currentPropValue` is not **the primary object** we're working on
+                mergeLiteral(currentValueClone, newPropValue);
+                
+                // merging style prop no need to rearrange the prop position
+                style[propName] = currentValueClone as any; // set the mutated `currentValueClone` back to `style`
+            } // if
+        } // if
+    } // for
+}
+const mergeNested  = (style: Style): Style => {
+    //#region group (nested) Rule(s) by selector name
+    const groupByNested = (
+        Object.getOwnPropertySymbols(style)
+        .reduce((accum, sym) => {
+            const nestedSelector = sym.description ?? '';
+            if (
+                // nested rules:
+                nestedSelector.includes('&')
+                ||
+                // conditional rules & globals:
+                ['@media', '@supports', '@document', '@global'].some((at) => nestedSelector.startsWith(at))
+            ) {
+                let group = accum.get(nestedSelector);             // get an existing collector
+                if (!group) accum.set(nestedSelector, group = []); // create a new collector
+                group.push(sym);
+            } // if
+            return accum;
+    }, new Map<string, symbol[]>()));
+    //#endregion group (nested) Rule(s) by selector name
+    
+    
+    
+    //#region merge duplicates (nested) Rule(s) to unique ones
+    for (const group of Array.from(groupByNested.values())) {
+        if (group.length <= 1) continue; // filter out groups with single/no member
+        
+        
+        
+        const mergedStyles = mergeStyles(
+            group.map((sym) => style[sym])
+        );
+        
+        
+        
+        if (mergedStyles) {
+            // update last member
+            style[group[group.length - 1]] = mergedStyles; // merge all member's style to the last member
+        }
+        else {
+            // mergedStyles is empty => delete last member
+            delete style[group[group.length - 1]];
+        } // if
+        for (const sym of group.slice(0, -1)) delete style[sym]; // delete first member to second last member
+    } // for
+    //#endregion merge duplicates (nested) Rule to unique ones
+    
+    
+    
+    //#region merge only_parentSelector into current style
+    const parentSelector = groupByNested.get('&')?.pop(); // remove & get the last member in parentSelector group
+    if (parentSelector) {
+        const parentStyles       = style[parentSelector];
+        const mergedParentStyles = mergeStyles(parentStyles);
+        if (mergedParentStyles) {
+            mergeLiteral(style, mergedParentStyles); // merge into current style
+            delete style[parentSelector];            // merged => delete source
+        } // if
+    } // if
+    //#endregion merge only_parentSelector into current style
+    
+    
+    
+    return style;
+}
+
+// prevents JSS to clone the CSSFN Style (because the symbol props are not copied)
+class MergedStyle {
+    constructor(style?: Style) {
+        if (style) Object.assign(this, style);
+    }
+};
+const emptyMergedStyle = new MergedStyle();
+Object.seal(emptyMergedStyle);
+
 /**
  * Merges the (sub) component's composition to single `Style`.
  * @returns A `Style` represents the merged (sub) component's composition  
  * -or-  
  * `null` represents an empty `Style`.
  */
-export const mergeStyles     = (styles: StyleCollection): Style|null => {
+export const mergeStyles = (styles: StyleCollection): Style|null => {
     /*
         StyleCollection = ProductOrFactoryOrDeepArray<OptionalOrFalse<Style>>
         StyleCollection = ProductOrFactory<OptionalOrFalse<Style>> | ProductOrFactoryDeepArray<OptionalOrFalse<Style>>
@@ -240,18 +384,29 @@ export const mergeStyles     = (styles: StyleCollection): Style|null => {
         
         
         
-        return styleValue;
+        const mergedStyles: Style = (new MergedStyle(styleValue) as Style);
+        mergeNested(mergedStyles);
+        
+        
+        
+        // do not return an empty style, instead return null:
+        if ((!Object.keys(mergedStyles).length) && (!Object.getOwnPropertySymbols(mergedStyles).length)) return null; // an empty object => return `null`
+        
+        // return non empty style:
+        return mergedStyles;
     } // if
     
     
     
-    const mergedStyles: Style = {}
-    for (const subStyles of styles) {
+    const mergedStyles: Style = (new MergedStyle() as Style);
+    for (const subStyles of styles) { // shallow iterating array
         const subStyleValue: OptionalOrFalse<Style> = (
             Array.isArray(subStyles)
             ?
+            // deep iterating array
             mergeStyles(subStyles) // an array => ProductOrFactoryDeepArray<OptionalOrFalse<Style>> => recursively `mergeStyles()`
             :
+            // final element => might be a function or a product
             (
                 // not an array => ProductOrFactory<OptionalOrFalse<Style>>
                 
@@ -266,16 +421,499 @@ export const mergeStyles     = (styles: StyleCollection): Style|null => {
         
         
         
-        mergeStyle(mergedStyles, subStyleValue);
+        // merge current style to single big style (string props + symbol props):
+        mergeLiteral(mergedStyles, subStyleValue);
     } // for
-    if (Object.keys(mergedStyles).length === 0) return null; // an empty object => return `null`
+    mergeNested(mergedStyles);
+    
+    
+    
+    // do not return an empty style, instead return null:
+    if ((!Object.keys(mergedStyles).length) && (!Object.getOwnPropertySymbols(mergedStyles).length)) return null; // an empty object => return `null`
+    
+    // return non empty style:
     return mergedStyles;
 }
+
+const nthChildNSelector = pseudoClassSelector('nth-child', 'n');
+const adjustSpecificityWeight = (selectorList: PureSelectorModelList, minSpecificityWeight: number|null, maxSpecificityWeight: number|null): PureSelectorModelList => {
+    if (
+        (minSpecificityWeight == null)
+        &&
+        (maxSpecificityWeight == null)
+    ) return selectorList; // nothing to adjust
+    
+    
+    
+    //#region group selectors by specificity weight status
+    const enum SpecificityWeightStatus {
+        Fit,
+        TooBig,
+        TooSmall,
+    }
+    type GroupBySpecificityWeightStatus = Map<SpecificityWeightStatus, { selector: PureSelectorModel, specificityWeight: number }[]>
+    const selectorListBySpecificityWeightStatus = selectorList.map((selector) => selector.filter(isNotEmptySelectorEntry) as PureSelectorModel).reduce(
+        (accum, selector): GroupBySpecificityWeightStatus => {
+            const [specificityWeight, weightStatus] = ((): readonly [number, SpecificityWeightStatus] => {
+                const specificityWeight = calculateSpecificity(selector)[1];
+                
+                
+                
+                if ((maxSpecificityWeight !== null) && (specificityWeight > maxSpecificityWeight)) {
+                    return [specificityWeight, SpecificityWeightStatus.TooBig];
+                } // if
+                
+                
+                
+                if ((minSpecificityWeight !== null) && (specificityWeight < minSpecificityWeight)) {
+                    return [specificityWeight, SpecificityWeightStatus.TooSmall];
+                } // if
+                
+                
+                
+                return [specificityWeight, SpecificityWeightStatus.Fit];
+            })();
+            let group = accum.get(weightStatus);             // get an existing collector
+            if (!group) accum.set(weightStatus, group = []); // create a new collector
+            group.push({ selector, specificityWeight });
+            return accum;
+        },
+        new Map<SpecificityWeightStatus, { selector: PureSelectorModel, specificityWeight: number }[]>()
+    );
+    //#endregion group selectors by specificity weight status
+    
+    const fitSelectors      = selectorListBySpecificityWeightStatus.get(SpecificityWeightStatus.Fit      ) ?? [];
+    const tooBigSelectors   = selectorListBySpecificityWeightStatus.get(SpecificityWeightStatus.TooBig   ) ?? [];
+    const tooSmallSelectors = selectorListBySpecificityWeightStatus.get(SpecificityWeightStatus.TooSmall ) ?? [];
+    
+    
+    
+    return createSelectorList(
+        ...fitSelectors.map((group) => group.selector),
+        
+        ...tooBigSelectors.flatMap((group) => {
+            const reversedSelector = group.selector.reverse(); // reverse & mutate the current `group.selector` array
+            
+            type SelectorAccum = { remaining: number, reducedSelector: SelectorModel }
+            const { reducedSelector: reversedReducedSelector, remaining: remainingSpecificityWeight } : SelectorAccum = (
+                reversedSelector.slice(0) // clone the `reversedSelector` because the `reduce()` uses `splice()` to break the iteration
+                .reduce((accum, selectorEntry, index, array): SelectorAccum => {
+                    if (accum.remaining <= 0) {
+                        array.splice(1); // eject early by mutating iterated copy - it's okay to **mutate** the `array` because it already cloned at `slice(0)`
+                        return accum;
+                    } // if
+                    
+                    
+                    
+                    if (isSimpleSelector(selectorEntry)) {
+                        const [
+                            /*
+                                selector tokens:
+                                '&'  = parent         selector
+                                '*'  = universal      selector
+                                '['  = attribute      selector
+                                ''   = element        selector
+                                '#'  = ID             selector
+                                '.'  = class          selector
+                                ':'  = pseudo class   selector
+                                '::' = pseudo element selector
+                            */
+                            selectorToken,
+                            
+                            /*
+                                selector name:
+                                string = the name of [element, ID, class, pseudo class, pseudo element] selector
+                            */
+                            selectorName,
+                            
+                            /*
+                                selector parameter(s):
+                                string       = the parameter of pseudo class selector, eg: nth-child(2n+3) => '2n+3'
+                                array        = [name, operator, value, options] of attribute selector, eg: [data-msg*="you & me" i] => ['data-msg', '*=', 'you & me', 'i']
+                                SelectorList = nested selector(s) of pseudo class [:is(...), :where(...), :not(...)]
+                            */
+                            // selectorParams,
+                        ] = selectorEntry;
+                        if (selectorToken === ':') {
+                            switch (selectorName) {
+                                case 'is':
+                                case 'not':
+                                case 'has':
+                                    const specificityWeight = calculateSpecificity([selectorEntry])[1];
+                                    accum.remaining -= specificityWeight; // reduce the counter
+                                    break;
+                                
+                                case 'where':
+                                    break; // don't reduce the counter
+                                
+                                default:
+                                    accum.remaining--; // reduce the counter
+                            } // switch
+                        }
+                        else if (['.', '[',].includes(selectorToken)) {
+                            accum.remaining--; // reduce the counter
+                        } // if
+                    } // if
+                    
+                    
+                    
+                    accum.reducedSelector.push(selectorEntry);
+                    return accum;
+                }, ({
+                    remaining       : (group.specificityWeight - (maxSpecificityWeight ?? group.specificityWeight)),
+                    reducedSelector : [],
+                } as SelectorAccum))
+            );
+            
+            
+            
+            const [whereSelector, ...pseudoElmSelectors] = groupSelector(
+                reversedReducedSelector.reverse(),
+                { selectorName: 'where' }
+            );
+            whereSelector.unshift(
+                ...reversedSelector.slice(reversedReducedSelector.length).reverse(),
+            );
+            whereSelector.push(
+                ...(new Array<SimpleSelectorModel>((remainingSpecificityWeight < 0) ? -remainingSpecificityWeight : 0)).fill(
+                    nthChildNSelector // or use `nth-child(n)`
+                ),
+            );
+            return createSelectorList(
+                whereSelector,
+                ...pseudoElmSelectors,
+            );
+        }),
+        
+        ...tooSmallSelectors.map((group) => createSelector(
+            ...group.selector,
+            ...(new Array<SimpleSelectorModel>((minSpecificityWeight ?? 1) - group.specificityWeight)).fill(
+                group.selector
+                .filter(isClassOrPseudoClassSelector) // only interested to class selector -or- pseudo class selector
+                .filter((simpleSelector) => {         // pseudo class selector without parameters
+                    const [
+                        /*
+                            selector tokens:
+                            '&'  = parent         selector
+                            '*'  = universal      selector
+                            '['  = attribute      selector
+                            ''   = element        selector
+                            '#'  = ID             selector
+                            '.'  = class          selector
+                            ':'  = pseudo class   selector
+                            '::' = pseudo element selector
+                        */
+                        // selectorToken
+                        ,
+                        
+                        /*
+                            selector name:
+                            string = the name of [element, ID, class, pseudo class, pseudo element] selector
+                        */
+                        // selectorName
+                        ,
+                        
+                        /*
+                            selector parameter(s):
+                            string       = the parameter of pseudo class selector, eg: nth-child(2n+3) => '2n+3'
+                            array        = [name, operator, value, options] of attribute selector, eg: [data-msg*="you & me" i] => ['data-msg', '*=', 'you & me', 'i']
+                            SelectorList = nested selector(s) of pseudo class [:is(...), :where(...), :not(...)]
+                        */
+                        selectorParams,
+                    ] = simpleSelector;
+                    
+                    return (selectorParams === undefined);
+                })
+                .pop()            // repeats the last selector until minSpecificityWeight satisfied
+                ??
+                nthChildNSelector // or use `nth-child(n)`
+            )
+        )),
+    );
+};
+
+export interface SelectorOptions {
+    groupSelectors ?: boolean
+    
+    specificityWeight    ?: number|null
+    minSpecificityWeight ?: number|null
+    maxSpecificityWeight ?: number|null
+}
+const defaultSelectorOptions : Required<SelectorOptions> = {
+    groupSelectors  : true,
+    
+    specificityWeight    : null,
+    minSpecificityWeight : null,
+    maxSpecificityWeight : null,
+};
+export const mergeSelectors = (selectorList: SelectorModelList, options: SelectorOptions = defaultSelectorOptions): SelectorModelList => {
+    const {
+        groupSelectors : doGroupSelectors = defaultSelectorOptions.groupSelectors,
+        
+        specificityWeight,
+    } = options;
+    const minSpecificityWeight = specificityWeight ?? options.minSpecificityWeight ?? null;
+    const maxSpecificityWeight = specificityWeight ?? options.maxSpecificityWeight ?? null;
+    
+    
+    
+    if (
+        !doGroupSelectors // do not perform grouping
+        &&
+        (minSpecificityWeight === null) && (maxSpecificityWeight === null) // do not perform transform
+    ) return selectorList; // nothing to do
+    
+    
+    
+    const normalizedSelectorList = (
+        selectorList
+        .flatMap((selector) => ungroupSelector(selector))
+        .filter(isNotEmptySelector)
+    );
+    
+    
+    
+    if (
+        (!doGroupSelectors || (normalizedSelectorList.length <= 1)) // do not perform grouping || only singular => nothing to group
+        &&
+        (minSpecificityWeight === null) && (maxSpecificityWeight === null) // do not perform transform
+    ) return normalizedSelectorList; // nothing to do
+    
+    
+    
+    // transform:
+    const adjustedSelectorList = adjustSpecificityWeight(
+        normalizedSelectorList
+        ,
+        minSpecificityWeight,
+        maxSpecificityWeight
+    );
+    
+    
+    
+    if (
+        (!doGroupSelectors || (adjustedSelectorList.length <= 1)) // do not perform grouping || only singular => nothing to group
+    ) return adjustedSelectorList; // nothing to do
+    
+    
+    
+    //#region group selectors by parent position
+    const enum ParentPosition {
+        OnlyParent,
+        OnlyBeginParent,
+        OnlyEndParent,
+        RandomParent,
+    }
+    type GroupByParentPosition = Map<ParentPosition, PureSelectorModel[]>
+    const selectorListByParentPosition = adjustedSelectorList.map((selector) => selector.filter(isNotEmptySelectorEntry) as PureSelectorModel).reduce(
+        (accum, selector): GroupByParentPosition => {
+            const position = ((): ParentPosition => {
+                const hasFirstParent = ((): boolean => {
+                    if (selector.length < 1) return false;                      // at least 1 entry must exist, for the first_parent
+                    
+                    const firstSelectorEntry = selector[0];                     // take the first entry
+                    return isParentSelector(firstSelectorEntry);                // the entry must be ParentSelector
+                })();
+                
+                const onlyParent      = hasFirstParent && (selector.length === 1);
+                if (onlyParent) return ParentPosition.OnlyParent;
+                
+                
+                
+                const hasMiddleParent = ((): boolean => {
+                    if (selector.length < 3) return false;                      // at least 3 entry must exist, the first & last are already reserved, the middle one is the middle_parent
+                    
+                    for (let index = 1, maxIndex = (selector.length - 2); index <= maxIndex; index++) {
+                        const middleSelectorEntry = selector[index];            // take the 2nd_first_entry until the 2nd_last_entry
+                        if (isParentSelector(middleSelectorEntry)) return true; // the entry must be ParentSelector, otherwise skip to next
+                    } // for
+                    
+                    return false; // ran out of iterator => not found
+                })();
+                const hasLastParent = ((): boolean => {
+                    const length = selector.length;
+                    if (length < 2) return false;                               // at least 2 entry must exist, the first is already reserved, the last one is the last_parent
+                    
+                    const lastSelectorEntry = selector[length - 1];             // take the last entry
+                    return isParentSelector(lastSelectorEntry);                 // the entry must be ParentSelector
+                })();
+                
+                const onlyBeginParent = hasFirstParent && !hasMiddleParent && !hasLastParent;
+                if (onlyBeginParent) return ParentPosition.OnlyBeginParent;
+                
+                const onlyEndParent   = !hasFirstParent && !hasMiddleParent && hasLastParent;
+                if (onlyEndParent) return ParentPosition.OnlyEndParent;
+                
+                return ParentPosition.RandomParent;
+            })();
+            let group = accum.get(position);             // get an existing collector
+            if (!group) accum.set(position, group = []); // create a new collector
+            group.push(selector);
+            return accum;
+        },
+        new Map<ParentPosition, PureSelectorModel[]>()
+    );
+    //#endregion group selectors by parent position
+    
+    const onlyParentSelectorList      = selectorListByParentPosition.get(ParentPosition.OnlyParent      ) ?? [];
+    const onlyBeginParentSelectorList = selectorListByParentPosition.get(ParentPosition.OnlyBeginParent ) ?? [];
+    const onlyEndParentSelectorList   = selectorListByParentPosition.get(ParentPosition.OnlyEndParent   ) ?? [];
+    const randomParentSelectorList    = selectorListByParentPosition.get(ParentPosition.RandomParent    ) ?? [];
+    
+    
+    
+    type GroupByCombinator = Map<Combinator|null, PureSelectorModelList>
+    const createGroupByCombinator = (fetch: (selector: PureSelectorModel) => Combinator|null) => (accum: GroupByCombinator, selector: PureSelectorModel): GroupByCombinator => {
+        const combinator = fetch(selector);
+        let group = accum.get(combinator);             // get an existing collector
+        if (!group) accum.set(combinator, group = []); // create a new collector
+        group.push(selector);
+        return accum;
+    };
+    const groupedSelectorList = createSelectorList(
+        // only ParentSelector
+        // &
+        !!onlyParentSelectorList.length && (
+            onlyParentSelectorList[0] // just take the first one, the rest are guaranteed to be the same
+        ),
+        
+        
+        
+        // ParentSelector at beginning
+        // &aaa
+        // &:is(aaa, bbb, ccc)
+        ...((): SelectorModelList => {
+            if (onlyBeginParentSelectorList.length <= 1) return onlyBeginParentSelectorList; // only contain one/no Selector, no need to group
+            
+            
+            
+            //#region group selectors by combinator
+            const selectorListByCombinator = onlyBeginParentSelectorList.reduce(
+                createGroupByCombinator((selector) => {
+                    if (selector.length >= 2) {                           // at least 2 entry must exist, for the first_parent followed by combinator
+                        const secondSelectorEntry = selector[1];          // take the first_second entry
+                        if (isCombinator(secondSelectorEntry)) {          // the entry must be the same as combinator
+                            return secondSelectorEntry;
+                        } // if
+                    } // if
+                    
+                    return null; // ungroupable
+                }),
+                new Map<Combinator|null, PureSelectorModelList>()
+            );
+            //#endregion group selectors by combinator
+            return Array.from(selectorListByCombinator.entries()).flatMap(([combinator, selectors]) => {
+                if (selectors.length <= 1) return selectors;  // only contain one/no Selector, no need to group
+                if (selectors.filter((selector) => selector.every(isNotPseudoElementSelector)).length <= 1) return selectors;  // only contain one/no Selector without ::pseudo-element, no need to group
+                
+                
+                
+                const [isSelector, ...pseudoElmSelectors] = groupSelectors(
+                    selectors
+                    .filter(isNotEmptySelector) // remove empty Selector(s) in SelectorList
+                    .map((selector) => selector.slice(
+                        (
+                            combinator
+                            ?
+                            2 // remove the first_parent & combinator
+                            :
+                            1 // remove the first_parent
+                        )
+                        +
+                        (selector.some(isPseudoElementSelector) ? -1 : 0) // exception for ::pseudo-element => do not remove the first_parent
+                    )),
+                    { selectorName: 'is' }
+                );
+                return createSelectorList(
+                    isNotEmptySelector(isSelector) && createSelector(
+                        parentSelector(), // add a ParentSelector      before :is(...)
+                        combinator,       // add a Combinator (if any) before :is(...)
+                        ...isSelector,    // :is(...)
+                    ),
+                    ...pseudoElmSelectors,
+                );
+            });
+        })(),
+        
+        
+        
+        // ParentSelector at end
+        // aaa&
+        // :is(aaa, bbb, ccc)&
+        ...((): SelectorModelList => {
+            if (onlyEndParentSelectorList.length <= 1) return onlyEndParentSelectorList; // only contain one/no Selector, no need to group
+            
+            
+            
+            //#region group selectors by combinator
+            const selectorListByCombinator = onlyEndParentSelectorList.reduce(
+                createGroupByCombinator((selector) => {
+                    const length = selector.length;
+                    if (length >= 2) {                                    // at least 2 entry must exist, for the combinator followed by last_parent
+                        const secondSelectorEntry = selector[length - 2]; // take the last_second entry
+                        if (isCombinator(secondSelectorEntry)) {          // the entry must be the same as combinator
+                            return secondSelectorEntry;
+                        } // if
+                    } // if
+                    
+                    return null; // ungroupable
+                }),
+                new Map<Combinator|null, PureSelectorModelList>()
+            );
+            //#endregion group selectors by combinator
+            return Array.from(selectorListByCombinator.entries()).flatMap(([combinator, selectors]) => {
+                if (selectors.length <= 1) return selectors;  // only contain one/no Selector, no need to group
+                if (selectors.filter((selector) => selector.every(isNotPseudoElementSelector)).length <= 1) return selectors;  // only contain one/no Selector without ::pseudo-element, no need to group
+                
+                
+                
+                const [isSelector, ...pseudoElmSelectors] = groupSelectors(
+                    selectors
+                    .filter(isNotEmptySelector) // remove empty Selector(s) in SelectorList
+                    .map((selector) => selector.slice(0,
+                        (
+                            combinator
+                            ?
+                            -2 // remove the combinator & last_parent
+                            :
+                            -1 // remove the last_parent
+                        )
+                        +
+                        (selector.some(isPseudoElementSelector) ? 1 : 0) // exception for ::pseudo-element => do not remove the last_parent
+                    )),
+                    { selectorName: 'is' }
+                );
+                return createSelectorList(
+                    isNotEmptySelector(isSelector) && createSelector(
+                        ...isSelector,    // :is(...)
+                        combinator,       // add a Combinator (if any) after :is(...)
+                        parentSelector(), // add a ParentSelector      after :is(...)
+                    ),
+                    ...pseudoElmSelectors,
+                );
+            });
+        })(),
+        
+        
+        
+        // parent at random
+        // a&aa, bb&b, c&c&c
+        ...randomParentSelectorList,
+    );
+    
+    
+    
+    return groupedSelectorList;
+}
+
+
+
+// compositions:
 /**
  * Defines the additional component's composition.
  * @returns A `ClassEntry` represents the component's composition.
  */
-export const compositionOf   = <TClassName extends ClassName = ClassName>(className: TClassName, styles: StyleCollection[]): ClassEntry<TClassName> => [
+export const compositionOf   = <TClassName extends ClassName = ClassName>(className: TClassName, ...styles: StyleCollection[]): ClassEntry<TClassName> => [
     className,
     styles
 ];
@@ -284,483 +922,297 @@ export const compositionOf   = <TClassName extends ClassName = ClassName>(classN
  * Defines the main component's composition.
  * @returns A `ClassEntry` represents the component's composition.
  */
-export const mainComposition = (styles: StyleCollection[])      => compositionOf('main' , styles);
+export const mainComposition = (...styles: StyleCollection[]) => compositionOf('main' , ...styles);
 /**
  * Defines the global style applied to a whole document.
  * @returns A `ClassEntry` represents the global style.
  */
-export const globalDef       = (ruleCollection: RuleCollection) => compositionOf(''     , [rules(ruleCollection)]);
-export const imports         = (styles: StyleCollection[])      => composition(styles);
+export const globalDef       = (...rules :  RuleCollection[]) => compositionOf(''     , ...rules );
 
 
 
-// layouts:
+// styles:
 /**
- * Defines component's layout.
- * @returns A `Style` represents the component's layout.
+ * @deprecated move to `style()`
+ * Defines the (sub) component's composition.
+ * @returns A `Rule` represents the (sub) component's composition.
  */
-export const layout = (style: Style): Style => style;
+export const composition     = (...styles: StyleCollection[])  => noRule(...styles);
+/**
+ * Defines component's style.
+ * @returns A `Rule` represents the component's style.
+ */
+export const style   = (style: Style)                          => noRule(style);
+/**
+ * @deprecated move to `style()`
+ * Defines component's layout.
+ * @returns A `Rule` represents the component's layout.
+ */
+export const layout  = (style: Style)                          => noRule(style);
 /**
  * Defines component's variable(s).
- * @returns A `Style` represents the component's variable(s).
+ * @returns A `Rule` represents the component's variable(s).
  */
-export const vars   = (items: { [name: string]: JssValue }): Style => items;
+export const vars    = (items: { [key: Cust.Decl]: CssValue }) => noRule(items);
+export const imports = (...styles: StyleCollection[])          => noRule(...styles);
 
 
 
-//combinators:
-export interface CombinatorOptions {
-    groupSelectors? : boolean
-}
-const defaultCombinatorOptions : Required<CombinatorOptions> = {
-    groupSelectors  : true,
+// rules:
+/**
+ * Defines component's `style(s)` that is applied when the specified `selector(s)` meet the conditions.
+ * @returns A `Rule` represents the component's rule.
+ */
+export const rule = (rules: SelectorCollection, styles: StyleCollection, options: SelectorOptions = defaultSelectorOptions): Rule => {
+    const rulesString = (
+        flat(rules)
+        .filter((rule): rule is Selector => !!rule)
+    );
+    const enum RuleType {
+        SelectorRule, // &.foo   .boo&   .foo&.boo
+        AtRule,       // for `@media`
+        PropRule,     // for `from`, `to`, `25%`
+    }
+    type GroupByRuleTypes = Map<RuleType, Selector[]>
+    const rulesByTypes = rulesString.reduce(
+        (accum, rule): GroupByRuleTypes => {
+            let ruleType = ((): RuleType|null => {
+                if (rule.startsWith('@')) return RuleType.AtRule;
+                if (rule.startsWith(' ')) return RuleType.PropRule;
+                if (rule.includes('&'))   return RuleType.SelectorRule;
+                return null;
+            })();
+            switch (ruleType) {
+                case RuleType.PropRule:
+                    rule = rule.slice(1);
+                    break;
+                
+                case null:
+                    ruleType = RuleType.SelectorRule;
+                    rule = `&${rule}`;
+                    break;
+            } // switch
+            
+            
+            
+            let group = accum.get(ruleType);             // get an existing collector
+            if (!group) accum.set(ruleType, group = []); // create a new collector
+            group.push(rule);
+            return accum;
+        },
+        new Map<RuleType, Selector[]>()
+    );
+    
+    
+    
+    const selectorList = (
+        (rulesByTypes.get(RuleType.SelectorRule) ?? [])
+        .flatMap((selector) => {
+            const selectorList = parseSelectors(selector);
+            if (!selectorList) throw Error(`parse selector error: ${selector}`);
+            return selectorList;
+        })
+        .filter(isNotEmptySelector)
+    );
+    const mergedSelectorList = mergeSelectors(selectorList, options);
+    
+    
+    
+    return {
+        ...(isNotEmptySelectors(mergedSelectorList) ? {
+            [Symbol(
+                selectorsToString(mergedSelectorList)
+            )] : styles
+        } : {}),
+        
+        ...Object.fromEntries(
+            [
+                ...(rulesByTypes.get(RuleType.AtRule   ) ?? []),
+                ...(rulesByTypes.get(RuleType.PropRule ) ?? []),
+            ].map((rule) => [
+                Symbol(
+                    rule
+                ),
+                styles
+            ]),
+        ),
+    };
 };
-export const combinators  = (combinator: string, selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions): PropList => {
+
+// rule groups:
+export const rules    = (rules   : RuleCollection, options: SelectorOptions = defaultSelectorOptions): Rule => {
+    const result = (
+        flat(rules)
+        .filter((rule): rule is ProductOrFactory<OptionalOrFalse<Rule>> => !!rule)
+        .flatMap((ruleProductOrFactory: ProductOrFactory<OptionalOrFalse<Rule>>): OptionalOrFalse<Rule>[] => {
+            if (typeof(ruleProductOrFactory) === 'function') return [ruleProductOrFactory()];
+            return [ruleProductOrFactory];
+        })
+        .filter((optionalRule): optionalRule is Rule => !!optionalRule)
+    );
+    if (!options) return Object.assign({}, ...result);
+    
+    
+    
+    return Object.assign({},
+        ...result
+        .flatMap((rule) => Object.getOwnPropertySymbols(rule).map((sym) => [sym.description ?? '', rule[sym]] as const))
+        .map(([selectors, styles]) => rule(selectors, styles, options))
+    );
+};
+/**
+ * Defines component's variants.
+ * @returns A `Rule` represents the component's variants.
+ */
+export const variants = (variants: RuleCollection, options: SelectorOptions = defaultSelectorOptions) => rules(variants, options);
+export interface StateOptions extends SelectorOptions {
+    inherit ?: boolean
+}
+const defaultStateOptions : Required<StateOptions> = {
+    ...defaultSelectorOptions,
+    minSpecificityWeight: 3,
+    
+    inherit : false,
+};
+/**
+ * Defines component's states.
+ * @param inherit `true` to inherit states from parent element -or- `false` to create independent states.
+ * @returns A `Rule` represents the component's states.
+ */
+export const states   = (states  : RuleCollection|((inherit: boolean) => RuleCollection), options: StateOptions = defaultStateOptions) => {
     const {
-        groupSelectors = defaultCombinatorOptions.groupSelectors,
+        inherit = defaultStateOptions.inherit,
     } = options;
     
     
     
-    const withCombinator = `&${combinator}`;
-    const combiSelectors = flat(selectors).map((selector) => {
-        if (!selector) selector = '*'; // empty selector => match any element
+    return rules((typeof(states) === 'function') ? states(inherit) : states, options);
+}
+
+// rule shortcuts:
+export const keyframes         = (name: string, items: PropEx.Keyframes) => rule(`@keyframes ${name}`, (Object.fromEntries(
+    Object.entries(items).map(([key, frame]) => [Symbol(key), frame])
+) as Style));
+export const noRule            = (...styles: StyleCollection[]) => rule('&'                  , styles);
+export const emptyRule         = ()                             => rule(null                 , null  );
+export const fallbacks         = (...styles: StyleCollection[]) => rule('@fallbacks'         , styles);
+export const fontFace          = (...styles: StyleCollection[]) => rule('@font-face'         , styles);
+export const atGlobal          = (...rules :  RuleCollection[]) => rule('@global'            , rules );
+
+export const atRoot            = (...styles: StyleCollection[]) => rule(':root'              , styles);
+export const isFirstChild      = (...styles: StyleCollection[]) => rule(     ':first-child'  , styles);
+export const isNotFirstChild   = (...styles: StyleCollection[]) => rule(':not(:first-child)' , styles);
+export const isLastChild       = (...styles: StyleCollection[]) => rule(     ':last-child'   , styles);
+export const isNotLastChild    = (...styles: StyleCollection[]) => rule(':not(:last-child)'  , styles);
+export const isNthChild        = (step: number, offset: number, ...styles: StyleCollection[]): Rule => {
+    if (step === 0) { // no step
+        if (offset === 0) return emptyRule();                           // 0th => never => return empty rule
         
+        if (offset === 1) return isFirstChild(styles);                  // 1st
+        
+        return rule(`:nth-child(${offset})`, styles);                   // 2nd, 3rd, 4th, ...
+    }
+    else if (step === 1) { // 1 step
+        if (offset === 0) return rule(`:nth-child(n)`, styles);         // always match
+        
+        return rule(`:nth-child(n+${offset})`, styles);
+    }
+    else { // 2+ steps
+        if (offset === 0) return rule(`:nth-child(${step}n)`, styles);
+        
+        return rule(`:nth-child(${step}n+${offset})`, styles);
+    } // if
+};
+export const isNotNthChild     = (step: number, offset: number, ...styles: StyleCollection[]): Rule => {
+    if (step === 0) { // no step
+        if (offset === 0) return isNthChild(1, 0, styles);              // not 0th => not never => always match
+        
+        if (offset === 1) return isNotFirstChild(styles);               // not 1st
+        
+        return rule(`:not(:nth-child(${offset}))`, styles);             // not 2nd, not 3rd, not 4th, not ...
+    }
+    else if (step === 1) { // 1 step
+        if (offset === 0) return emptyRule();                           // never match
+        
+        return rule(`:not(:nth-child(n+${offset}))`, styles);
+    }
+    else { // 2+ steps
+        if (offset === 0) return rule(`:not(:nth-child(${step}n))`, styles);
+        
+        return rule(`:not(:nth-child(${step}n+${offset}))`, styles);
+    } // if
+};
+export const isNthLastChild    = (step: number, offset: number, ...styles: StyleCollection[]): Rule => {
+    if (step === 0) { // no step
+        if (offset === 0) return emptyRule();                           // 0th => never => return empty rule
+        
+        if (offset === 1) return isLastChild(styles);                   // 1st
+        
+        return rule(`:nth-last-child(${offset})`, styles);              // 2nd, 3rd, 4th, ...
+    }
+    else if (step === 1) { // 1 step
+        if (offset === 0) return rule(`:nth-last-child(n)`, styles);    // always match
+        
+        return rule(`:nth-last-child(n+${offset})`, styles);
+    }
+    else { // 2+ steps
+        if (offset === 0) return rule(`:nth-last-child(${step}n)`, styles);
+        
+        return rule(`:nth-last-child(${step}n+${offset})`, styles);
+    } // if
+};
+export const isNotNthLastChild = (step: number, offset: number, ...styles: StyleCollection[]): Rule => {
+    if (step === 0) { // no step
+        if (offset === 0) return isNthChild(1, 0, styles);              // not 0th last => not never => always match
+        
+        if (offset === 1) return isNotLastChild(styles);                // not 1st last
+        
+        return rule(`:not(:nth-last-child(${offset}))`, styles);        // not 2nd last, not 3rd last, not 4th last, not ... last
+    }
+    else if (step === 1) { // 1 step
+        if (offset === 0) return emptyRule();                           // never match
+        
+        return rule(`:not(:nth-last-child(n+${offset}))`, styles);
+    }
+    else { // 2+ steps
+        if (offset === 0) return rule(`:not(:nth-last-child(${step}n))`, styles);
+        
+        return rule(`:not(:nth-last-child(${step}n+${offset}))`, styles);
+    } // if
+};
+export const isActive          = (...styles: StyleCollection[]) => rule(     ':active'        , styles);
+export const isNotActive       = (...styles: StyleCollection[]) => rule(':not(:active)'       , styles);
+export const isFocus           = (...styles: StyleCollection[]) => rule(     ':focus'         , styles);
+export const isNotFocus        = (...styles: StyleCollection[]) => rule(':not(:focus)'        , styles);
+export const isFocusVisible    = (...styles: StyleCollection[]) => rule(     ':focus-visible' , styles);
+export const isNotFocusVisible = (...styles: StyleCollection[]) => rule(':not(:focus-visible)', styles);
+export const isHover           = (...styles: StyleCollection[]) => rule(     ':hover'         , styles);
+export const isNotHover        = (...styles: StyleCollection[]) => rule(':not(:hover)'        , styles);
+export const isEmpty           = (...styles: StyleCollection[]) => rule(     ':empty'         , styles);
+export const isNotEmpty        = (...styles: StyleCollection[]) => rule(':not(:empty)'        , styles);
+
+
+
+//combinators:
+export const combinators  = (combinator: Combinator, selectors: SelectorCollection, styles: StyleCollection, options: SelectorOptions = defaultSelectorOptions): Rule => {
+    const combiSelectors : Selector[] = flat(selectors).filter((selector): selector is Selector => !!selector).map((selector) => {
         // if (selector === '&') return selector; // no children => the parent itself
         if (selector.includes('&')) return selector; // custom combinator
         
         if (((combinator === ' ') || (combinator === '>')) && selector.startsWith('::')) return `&${selector}`; // pseudo element => attach the parent itself (for descendants & children)
         
-        return `${withCombinator}${selector}`;
+        return `&${combinator}${selector}`;
     });
     if (!combiSelectors.length) return {}; // no selector => return empty
     
     
     
-    const mergedStyles = mergeStyles(styles); // merge the `styles` to single `Style`, for making JSS understand
-    if (!mergedStyles) return {}; // no style => return empty
-    
-    
-    
-    if (groupSelectors) {
-        if (combiSelectors.length === 1) return {
-            [combiSelectors[0]]: (mergedStyles as JssValue),
-        };
-        
-        
-        
-        const selectorsGroups = combiSelectors.map((selector) => {
-            const withCombi = selector.startsWith(withCombinator);
-            if (withCombi) return { withCombi: selector };
-            
-            const onlyBeginAmp = (selector.lastIndexOf('&') === 0);
-            if (onlyBeginAmp) return { begAmp: selector };
-            
-            const onlyEndAmp = (selector.indexOf('&') === (selector.length - 1));
-            if (onlyEndAmp) return { endAmp: selector };
-            
-            return { other: selector };
-        });
-        const withCombiSelectors   = selectorsGroups.filter((group) => !!group.withCombi).map((group) => group.withCombi! );
-        const begAmpSelectors   = selectorsGroups.filter((group)    => !!group.begAmp   ).map((group) => group.begAmp!    );
-        const endAmpSelectors   = selectorsGroups.filter((group)    => !!group.endAmp   ).map((group) => group.endAmp!    );
-        const ungroupableSelectors = selectorsGroups.filter((group) => !!group.other    ).map((group) => group.other!     );
-        return {
-            ...(withCombiSelectors.length ? {
-                [
-                    (withCombiSelectors.length === 1)
-                    ?
-                    withCombiSelectors[0]
-                    :
-                    `${withCombinator}:is(${withCombiSelectors.map((selector) => selector.slice(withCombinator.length)).join(',')})`
-                ]: (mergedStyles as JssValue),
-            } : {}),
-            
-            ...(begAmpSelectors.length ? {
-                [
-                    (begAmpSelectors.length === 1)
-                    ?
-                    begAmpSelectors[0]
-                    :
-                    `&:is(${begAmpSelectors.map((selector) => selector.slice(1)).join(',')})`
-                ]: (mergedStyles as JssValue),
-            } : {}),
-            
-            ...(endAmpSelectors.length ? {
-                [
-                    (endAmpSelectors.length === 1)
-                    ?
-                    endAmpSelectors[0]
-                    :
-                    `:is(${endAmpSelectors.map((selector) => selector.slice(0, -1)).join(',')})&`
-                ]: (mergedStyles as JssValue),
-            } : {}),
-            
-            ...(ungroupableSelectors.length ? {
-                [ungroupableSelectors.join(',')]: (mergedStyles as JssValue),
-            } : {}),
-        };
-    }
-    else {
-        return Object.fromEntries(
-            combiSelectors
-            .map((combiSelector) => [combiSelector, (mergedStyles as JssValue)])
-        );
-    } // if
+    return rule(combiSelectors, styles, options);
 };
-export const descendants  = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators(' ', selectors, styles, options);
-export const children     = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators('>', selectors, styles, options);
-export const siblings     = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators('~', selectors, styles, options);
-export const nextSiblings = (selectors: SelectorCollection, styles: StyleCollection, options: CombinatorOptions = defaultCombinatorOptions) => combinators('+', selectors, styles, options);
-
-
-
-// rules:
-export interface RuleOptions {
-    minSpecificityWeight? : number
-}
-const defaultRuleOptions : Required<RuleOptions> = {
-    minSpecificityWeight  : 0,
-};
-export const rules = (ruleCollection: RuleCollection, options: RuleOptions = defaultRuleOptions): StyleCollection => {
-    const {
-        minSpecificityWeight = defaultRuleOptions.minSpecificityWeight,
-    } = options;
-    
-    
-    
-    return composition(
-        ((): StyleCollection[] => {
-            const noSelectors: StyleCollection[] = [];
-            
-            return [
-                ...(Array.isArray(ruleCollection) ? ruleCollection : [ruleCollection])
-                .flatMap((ruleEntrySourceList: RuleEntrySource|RuleList): OptionalOrFalse<RuleEntry>[] => { // convert: Factory<RuleEntry>|RuleEntry|RuleList => [RuleEntry]|[RuleEntry]|[...RuleList] => [RuleEntry]
-                    const isOptionalString                = (value: any): value is OptionalString => {
-                        if (value === null)      return true; // optional `null`
-                        if (value === undefined) return true; // optional `undefined`
-                        if (value === false)     return true; // optional `false`
-                        
-                        
-                        
-                        return ((typeof value) === 'string');
-                    };
-                    const isOptionalStringDeepArr         = (value: any): value is OptionalString[] => {
-                        if (!Array.isArray(value)) return false;
-                        
-                        
-                        
-                        const nonOptionalStringItems = value.filter((v) => !isOptionalString(v));
-                        if (nonOptionalStringItems.length === 0) return true;
-                        
-                        
-                        
-                        for (const nonOptionalStringItem of nonOptionalStringItems) {
-                            if (!isOptionalStringDeepArr(nonOptionalStringItem)) return false;
-                        } // for
-                        
-                        
-                        
-                        return true;
-                    };
-                    
-                    const isOptionalSelector              = (value: any): value is OptionalOrFalse<Selector>   => isOptionalString(value);
-                    const isOptionalSelectorDeepArr       = (value: any): value is OptionalOrFalse<Selector>[] => isOptionalStringDeepArr(value);
-                    
-                    const isOptionalStyleOrFactory        = (value: any): value is ProductOrFactory<Style> => {
-                        if (value === null)      return true; // optional `null`
-                        if (value === undefined) return true; // optional `undefined`
-                        
-                        
-                        
-                        return (
-                            value
-                            &&
-                            (
-                                ((typeof(value) === 'object') && !Array.isArray(value)) // literal object => `Style`
-                                ||
-                                (typeof(value) === 'function') // function => `Factory<Style>`
-                            )
-                        );
-                    };
-                    const isOptionalStyleOrFactoryDeepArr = (value: any): value is Style[] => {
-                        if (!Array.isArray(value)) return false;
-                        
-                        
-                        
-                        const nonStyleOrFactoryItems = value.filter((v) => !isOptionalStyleOrFactory(v));
-                        if (nonStyleOrFactoryItems.length === 0) return true;
-                        
-                        
-                        
-                        for (const nonStyleOrFactoryItem of nonStyleOrFactoryItems) {
-                            if (!isOptionalStyleOrFactoryDeepArr(nonStyleOrFactoryItem)) return false;
-                        } // for
-                        
-                        
-                        
-                        return true;
-                    };
-                    
-                    const isOptionalRuleEntry             = (value: any): value is OptionalOrFalse<RuleEntry> => {
-                        if (value === null)      return true; // optional `null`
-                        if (value === undefined) return true; // optional `undefined`
-                        if (value === false)     return true; // optional `false`
-                        
-                        
-                        
-                        if (value.length !== 2)  return false; // not a tuple => not a `RuleEntry`
-                        
-                        
-                        
-                        const [first, second] = value;
-                        
-                        /*
-                            the first element must be `SelectorCollection`:
-                            * `OptionalOrFalse<Selector>`
-                            * DeepArrayOf< `OptionalOrFalse<Selector>` >
-                            * empty array
-                        */
-                        // and
-                        /*
-                            the second element must be `StyleCollection`:
-                            * `OptionalOrFalse<Style>` | `Factory<OptionalOrFalse<Style>>`
-                            * DeepArrayOf< `OptionalOrFalse<Style> | Factory<OptionalOrFalse<Style>>` >
-                            * empty array
-                        */
-                        return (
-                            (
-                                isOptionalSelector(first)
-                                ||
-                                isOptionalSelectorDeepArr(first)
-                            )
-                            &&
-                            (
-                                isOptionalStyleOrFactory(second)
-                                ||
-                                isOptionalStyleOrFactoryDeepArr(second)
-                            )
-                        );
-                    };
-                    
-                    
-                    
-                    if (typeof(ruleEntrySourceList) === 'function') return [ruleEntrySourceList()];
-                    if (isOptionalRuleEntry(ruleEntrySourceList))   return [ruleEntrySourceList];
-                    return ruleEntrySourceList.map((ruleEntrySource) => (typeof(ruleEntrySource) === 'function') ? ruleEntrySource() : ruleEntrySource);
-                })
-                .filter((optionalRuleEntry): optionalRuleEntry is RuleEntry => !!optionalRuleEntry)
-                .map(([selectors, styles]): readonly [NestedSelector[], StyleCollection] => {
-                    let nestedSelectors = flat(selectors).filter((selector): selector is Selector => !!selector).map((selector): NestedSelector => {
-                        if (selector.startsWith('@')) return (selector as NestedSelector); // for `@media`
-                        
-                        if (selector.includes('&')) return (selector as NestedSelector); // &.foo   .boo&   .foo&.boo
-                        
-                        // if (selector.startsWith('.') || selector.startsWith(':') || selector.startsWith('#') || (selector === '*')) return `&${selector}`;
-                        
-                        return `&${selector}`;
-                    });
-                    if (minSpecificityWeight >= 2) {
-                        nestedSelectors = nestedSelectors.map((nestedSelector: NestedSelector): NestedSelector => {
-                            if (nestedSelector === '&') return nestedSelector; // zero specificity => no change
-                            
-                            // one/more specificities found => increase the specificity weight until reaches `minSpecificityWeight`
-                            
-                            
-                            
-                            // calculate the specificity weight:
-                            // `.realClassName` or `:pseudoClassName` (without parameters):
-                            const classes               = nestedSelector.match(/(\.|:(?!(is|not)(?![\w-])))[\w-]+/gmi); // count the `.RealClass` and `:PseudoClass` but not `:is` or `:not`
-                            const specificityWeight     = classes?.length ?? 0;
-                            const missSpecificityWeight = minSpecificityWeight - specificityWeight;
-                            
-                            
-                            
-                            // the specificity weight was meet the minimum specificity required => no change:
-                            if (missSpecificityWeight <= 0) return nestedSelector;
-                            
-                            // the specificity weight is less than the minimum specificity required => increase the specificity:
-                            return `${nestedSelector}${(new Array(missSpecificityWeight)).fill(((): Selector => {
-                                const lastClass = classes?.[classes.length - 1];
-                                if (lastClass) {
-                                    // the last word (without parameters):
-                                    if (nestedSelector.length === (nestedSelector.lastIndexOf(lastClass) + lastClass.length)) return (lastClass as Selector); // `.RealClass` or `:PseudoClass` without parameters
-                                } // if
-                                
-                                
-                                
-                                // use a **hacky class name** to increase the specificity:
-                                return ':not(._)';
-                            })()).join('')}` as NestedSelector;
-                        });
-                    } // if
-                    
-                    
-                    
-                    if (nestedSelectors.includes('&')) { // contains one/more selectors with zero specificity
-                        nestedSelectors = nestedSelectors.filter((nestedSelector) => (nestedSelector !== '&')); // filter out selectors with zero specificity
-                        noSelectors.push(styles); // add styles with zero specificity
-                    } // if
-                    
-                    
-                    
-                    return [nestedSelectors, styles];
-                })
-                .filter(([nestedSelectors]) => (nestedSelectors.length > 0)) // filter out empty `nestedSelectors`
-                .map(([nestedSelectors, styles]) => [
-                    nestedSelectors,
-                    mergeStyles(styles) // merge the `styles` to single `Style`, for making JSS understand
-                ] as const)
-                .filter((tuple): tuple is (readonly [typeof tuple[0], Style]) => !!tuple[1]) // filter out empty `mergedStyles`
-                .map(([nestedSelectors, mergedStyles]): Style => {
-                    const selectorsGroups = nestedSelectors.map((selector) => {
-                        const onlyBeginAmp = (selector.lastIndexOf('&') === 0);
-                        if (onlyBeginAmp) return { begAmp: selector };
-                        
-                        const onlyEndAmp = (selector.indexOf('&') === (selector.length - 1));
-                        if (onlyEndAmp) return { endAmp: selector };
-                        
-                        return { other: selector };
-                    });
-                    const begAmpSelectors   = selectorsGroups.filter((group)    => !!group.begAmp   ).map((group) => group.begAmp!    );
-                    const endAmpSelectors   = selectorsGroups.filter((group)    => !!group.endAmp   ).map((group) => group.endAmp!    );
-                    const ungroupableSelectors = selectorsGroups.filter((group) => !!group.other    ).map((group) => group.other!     );
-                    return {
-                        ...(begAmpSelectors.length ? {
-                            [
-                                (begAmpSelectors.length === 1)
-                                ?
-                                begAmpSelectors[0]
-                                :
-                                `&:is(${begAmpSelectors.map((selector) => selector.slice(1)).join(',')})`
-                            ]: (mergedStyles as JssValue),
-                        } : {}),
-                        
-                        ...(endAmpSelectors.length ? {
-                            [
-                                (endAmpSelectors.length === 1)
-                                ?
-                                endAmpSelectors[0]
-                                :
-                                `:is(${endAmpSelectors.map((selector) => selector.slice(0, -1)).join(',')})&`
-                            ]: (mergedStyles as JssValue),
-                        } : {}),
-                        
-                        ...(ungroupableSelectors.length ? {
-                            [ungroupableSelectors.join(',')]: (mergedStyles as JssValue),
-                        } : {}),
-                    };
-                }),
-                
-                ...noSelectors,
-            ];
-        })()
-    );
-};
-// shortcut rules:
-/**
- * Defines component's variants.
- * @returns A `StyleCollection` represents the component's variants.
- */
-export const variants = (variants: RuleCollection, options: RuleOptions = defaultRuleOptions): StyleCollection => rules(variants, options);
-/**
- * Defines component's states.
- * @param inherit `true` to inherit states from parent element -or- `false` to create independent states.
- * @returns A `StyleCollection` represents the component's states.
- */
-export const states   = (states: RuleCollection|((inherit: boolean) => RuleCollection), inherit = false, options: RuleOptions = { ...defaultRuleOptions, minSpecificityWeight: 3 }): StyleCollection => {
-    return rules((typeof(states) === 'function') ? states(inherit) : states, options);
-}
-// rule items:
-/**
- * Defines component's `style(s)` that is applied when the specified `selector(s)` meet the conditions.
- * @returns A `RuleEntry` represents the component's rule.
- */
-export const rule = (selectors: SelectorCollection, styles: StyleCollection): RuleEntry => [selectors, styles];
-// shortcut rule items:
-export const noRule            = (styles: StyleCollection) => rule('&'                  , styles);
-export const emptyRule         = ()                        => rule(null                 , null  );
-export const atRoot            = (styles: StyleCollection) => rule(':root'              , styles);
-export const atGlobal          = (styles: StyleCollection) => rule('@global'            , styles);
-export const fontFace          = (styles: StyleCollection) => atGlobal(
-    rules([
-        rule('@font-face', styles),
-    ]),
-);
-export const isFirstChild      = (styles: StyleCollection) => rule(     ':first-child'  , styles);
-export const isNotFirstChild   = (styles: StyleCollection) => rule(':not(:first-child)' , styles);
-export const isLastChild       = (styles: StyleCollection) => rule(     ':last-child'   , styles);
-export const isNotLastChild    = (styles: StyleCollection) => rule(':not(:last-child)'  , styles);
-export const isNthChild        = (step: number, offset: number, styles: StyleCollection): RuleEntry => {
-    if (step === 0) { // no step
-        if (offset === 0) return emptyRule(); // element indices are starting from 1 => never match => return empty style
-        
-        if (offset === 1) return isFirstChild(styles);
-        
-        return rule(`:nth-child(${offset})`, styles);
-    }
-    else if (step === 1) { // 1 step
-        return rule(`:nth-child(n+${offset})`, styles);
-    }
-    else { // 2+ steps
-        return rule(`:nth-child(${step}n+${offset})`, styles);
-    } // if
-};
-export const isNotNthChild     = (step: number, offset: number, styles: StyleCollection): RuleEntry => {
-    if (step === 0) { // no step
-        // if (offset === 0) return emptyRule(); // element indices are starting from 1 => never match => return empty style
-        
-        if (offset === 1) return isNotFirstChild(styles);
-        
-        return rule(`:not(:nth-child(${offset}))`, styles);
-    }
-    else if (step === 1) { // 1 step
-        return rule(`:not(:nth-child(n+${offset}))`, styles);
-    }
-    else { // 2+ steps
-        return rule(`:not(:nth-child(${step}n+${offset}))`, styles);
-    } // if
-};
-export const isNthLastChild    = (step: number, offset: number, styles: StyleCollection): RuleEntry => {
-    if (step === 0) { // no step
-        if (offset === 0) return emptyRule(); // element indices are starting from 1 => never match => return empty style
-        
-        if (offset === 1) return isLastChild(styles);
-        
-        return rule(`:nth-last-child(${offset})`, styles);
-    }
-    else if (step === 1) { // 1 step
-        return rule(`:nth-last-child(n+${offset})`, styles);
-    }
-    else { // 2+ steps
-        return rule(`:nth-last-child(${step}n+${offset})`, styles);
-    } // if
-};
-export const isNotNthLastChild = (step: number, offset: number, styles: StyleCollection): RuleEntry => {
-    if (step === 0) { // no step
-        // if (offset === 0) return emptyRule(); // element indices are starting from 1 => never match => return empty style
-        
-        if (offset === 1) return isNotLastChild(styles);
-        
-        return rule(`:not(:nth-last-child(${offset}))`, styles);
-    }
-    else if (step === 1) { // 1 step
-        return rule(`:not(:nth-last-child(n+${offset}))`, styles);
-    }
-    else { // 2+ steps
-        return rule(`:not(:nth-last-child(${step}n+${offset}))`, styles);
-    } // if
-};
-export const isActive          = (styles: StyleCollection) => rule(     ':active'        , styles);
-export const isNotActive       = (styles: StyleCollection) => rule(':not(:active)'       , styles);
-export const isFocus           = (styles: StyleCollection) => rule(     ':focus'         , styles);
-export const isNotFocus        = (styles: StyleCollection) => rule(':not(:focus)'        , styles);
-export const isFocusVisible    = (styles: StyleCollection) => rule(     ':focus-visible' , styles);
-export const isNotFocusVisible = (styles: StyleCollection) => rule(':not(:focus-visible)', styles);
-export const isHover           = (styles: StyleCollection) => rule(     ':hover'         , styles);
-export const isNotHover        = (styles: StyleCollection) => rule(':not(:hover)'        , styles);
-export const isEmpty           = (styles: StyleCollection) => rule(     ':empty'         , styles);
-export const isNotEmpty        = (styles: StyleCollection) => rule(':not(:empty)'        , styles);
+export const descendants  = (selectors: SelectorCollection, styles: StyleCollection, options: SelectorOptions = defaultSelectorOptions) => combinators(' ', selectors, styles, options);
+export const children     = (selectors: SelectorCollection, styles: StyleCollection, options: SelectorOptions = defaultSelectorOptions) => combinators('>', selectors, styles, options);
+export const siblings     = (selectors: SelectorCollection, styles: StyleCollection, options: SelectorOptions = defaultSelectorOptions) => combinators('~', selectors, styles, options);
+export const nextSiblings = (selectors: SelectorCollection, styles: StyleCollection, options: SelectorOptions = defaultSelectorOptions) => combinators('+', selectors, styles, options);
 
 
 
@@ -786,22 +1238,9 @@ const flat = <T,>(collection: SingleOrDeepArray<T>): T[] => {
     
     
     
-    const merged: T[] = [];
-    for (const item of collection) {
-        if (Array.isArray(item)) {
-            // an array => DeepArray<T> => recursively `flat()`
-            
-            merged.push(...flat(item));
-        }
-        else {
-            // not an array => T
-            
-            merged.push(item);
-        } // if
-    } // for
-    return merged;
+    return collection.flat(Infinity);
 };
-export const iif = <T extends PropList|Style>(condition: boolean, content: T): T => {
+export const iif = <T extends CssProps|Rule|Style>(condition: boolean, content: T): T => {
     return condition ? content : ({} as T);
 };
 /**
