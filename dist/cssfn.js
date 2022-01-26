@@ -132,7 +132,10 @@ const mergeNested = (style) => {
         const nestedSelector = sym.description ?? '';
         if (
         // nested rules:
-        nestedSelector.includes('&')
+        ((nestedSelector !== '&') // ignore only_parentSelector
+            &&
+                nestedSelector.includes('&') // nested rule
+        )
             ||
                 // conditional rules & globals:
                 ['@media', '@supports', '@document', '@global'].some((at) => nestedSelector.startsWith(at))) {
@@ -161,17 +164,31 @@ const mergeNested = (style) => {
             delete style[sym]; // delete first member to second last member
     } // for
     //#endregion merge duplicates (nested) Rule to unique ones
-    //#region merge only_parentSelector into current style
-    const parentSelector = groupByNested.get('&')?.pop(); // remove & get the last member in parentSelector group
-    if (parentSelector) {
-        const parentStyles = style[parentSelector];
-        const mergedParentStyles = mergeStyles(parentStyles);
-        if (mergedParentStyles) {
-            mergeLiteral(style, mergedParentStyles); // merge into current style
-            delete style[parentSelector]; // merged => delete source
+    //#region merge only_parentSelector to current style
+    let moveNestedRules = false;
+    for (const sym of Object.getOwnPropertySymbols(style)) {
+        if (sym.description === '&') {
+            /* move the CssProps and (nested)Rules from only_parentSelector to current style */
+            const parentStyles = style[sym];
+            const mergedParentStyles = mergeStyles(parentStyles);
+            if (mergedParentStyles) {
+                if (!moveNestedRules) {
+                    const hasNestedRule = !!Object.getOwnPropertySymbols(mergedParentStyles).length;
+                    if (hasNestedRule)
+                        moveNestedRules = true;
+                } // if
+                mergeLiteral(style, mergedParentStyles); // merge into current style
+                delete style[sym]; // merged => delete source
+            } // if
+        }
+        else if (moveNestedRules) {
+            /* preserve the order of another (nested)Rules */
+            const nestedStyles = style[sym]; // backup
+            delete style[sym]; // delete
+            style[sym] = nestedStyles; // restore (re-insert at the last order)
         } // if
-    } // if
-    //#endregion merge only_parentSelector into current style
+    } // for
+    //#endregion merge only_parentSelector to current style
     return style;
 };
 // prevents JSS to clone the CSSFN Style (because the symbol props are not copied)
