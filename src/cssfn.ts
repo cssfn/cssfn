@@ -449,8 +449,8 @@ export const mergeStyles = (styles: StyleCollection): Style|null => {
         
         // merge current style to single big style (string props + symbol props):
         mergeLiteral(mergedStyles, subStyleValue);
+        mergeNested(mergedStyles); // merge nested immediately after literal, to preserve prop order in mergedStyles and in mergedStyles[Symbol('&')]
     } // for
-    mergeNested(mergedStyles);
     
     
     

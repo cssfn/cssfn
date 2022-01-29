@@ -251,8 +251,8 @@ export const mergeStyles = (styles) => {
             continue; // `null` or `undefined` => skip
         // merge current style to single big style (string props + symbol props):
         mergeLiteral(mergedStyles, subStyleValue);
+        mergeNested(mergedStyles); // merge nested immediately after literal, to preserve prop order in mergedStyles and in mergedStyles[Symbol('&')]
     } // for
-    mergeNested(mergedStyles);
     // do not return an empty style, instead return null:
     if ((!Object.keys(mergedStyles).length) && (!Object.getOwnPropertySymbols(mergedStyles).length))
         return null; // an empty object => return `null`
