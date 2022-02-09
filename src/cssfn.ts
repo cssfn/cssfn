@@ -1086,17 +1086,23 @@ export const rules    = (rules   : RuleCollection, options: SelectorOptions = de
         .map(([selectors, styles]) => rule(selectors, styles, options))
     );
 };
+export interface VariantOptions extends SelectorOptions {
+}
+const defaultVariantOptions : Required<VariantOptions> = {
+    ...defaultSelectorOptions,
+    maxSpecificityWeight: 2,
+};
 /**
  * Defines component's variants.
  * @returns A `Rule` represents the component's variants.
  */
-export const variants = (variants: RuleCollection, options: SelectorOptions = defaultSelectorOptions) => rules(variants, options);
+export const variants = (variants: RuleCollection, options: VariantOptions = defaultVariantOptions) => rules(variants, options);
 export interface StateOptions extends SelectorOptions {
     inherit ?: boolean
 }
 const defaultStateOptions : Required<StateOptions> = {
     ...defaultSelectorOptions,
-    minSpecificityWeight: 3,
+    specificityWeight: 3,
     
     inherit : false,
 };

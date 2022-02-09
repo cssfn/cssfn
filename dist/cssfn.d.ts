@@ -97,11 +97,13 @@ export declare const imports: (...styles: StyleCollection[]) => Rule;
  */
 export declare const rule: (rules: SelectorCollection, styles: StyleCollection, options?: SelectorOptions) => Rule;
 export declare const rules: (rules: RuleCollection, options?: SelectorOptions) => Rule;
+export interface VariantOptions extends SelectorOptions {
+}
 /**
  * Defines component's variants.
  * @returns A `Rule` represents the component's variants.
  */
-export declare const variants: (variants: RuleCollection, options?: SelectorOptions) => Rule;
+export declare const variants: (variants: RuleCollection, options?: VariantOptions) => Rule;
 export interface StateOptions extends SelectorOptions {
     inherit?: boolean;
 }

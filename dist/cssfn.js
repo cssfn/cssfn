@@ -672,14 +672,18 @@ export const rules = (rules, options = defaultSelectorOptions) => {
         .flatMap((rule) => Object.getOwnPropertySymbols(rule).map((sym) => [sym.description ?? '', rule[sym]]))
         .map(([selectors, styles]) => rule(selectors, styles, options)));
 };
+const defaultVariantOptions = {
+    ...defaultSelectorOptions,
+    maxSpecificityWeight: 2,
+};
 /**
  * Defines component's variants.
  * @returns A `Rule` represents the component's variants.
  */
-export const variants = (variants, options = defaultSelectorOptions) => rules(variants, options);
+export const variants = (variants, options = defaultVariantOptions) => rules(variants, options);
 const defaultStateOptions = {
     ...defaultSelectorOptions,
-    minSpecificityWeight: 3,
+    specificityWeight: 3,
     inherit: false,
 };
 /**
